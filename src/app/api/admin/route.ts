@@ -137,6 +137,23 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json({ success: true, url: publicUrl });
             }
 
+            case 'save_merchant': {
+                const { merchant_id, bank_code, terminal_id, merchant_name, merchant_city, mcc, currency_code, country_code } = data;
+                const { data: merchant, error } = await adminClient.from('merchant_data').insert({
+                    merchant_id,
+                    bank_code,
+                    terminal_id,
+                    merchant_name,
+                    merchant_city,
+                    mcc,
+                    currency_code,
+                    country_code
+                }).select().single();
+                
+                if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+                return NextResponse.json({ success: true, data: merchant });
+            }
+
             default:
                 return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
         }

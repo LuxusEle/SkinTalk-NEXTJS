@@ -6,6 +6,54 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUsers, faShoppingBag, faDollarSign, faBox, faChartLine, faSignOutAlt, faPlus, faTrash, faImage, faCreditCard, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { getSupabase, isAdminEmail, getAdminClient } from '@/lib/supabase';
+import { readQRFromFile } from '@/lib/qr';
+
+const bankCodeItems: Record<string, string> = {
+  "16852": "Alliance Finance Company PLC",
+  "16463": "Amana Bank PLC",
+  "16472": "Axis Bank",
+  "16010": "Bank of Ceylon",
+  "16481": "Cargills Bank Limited",
+  "16004": "Central Bank of Sri Lanka",
+  "16825": "Central Finance PLC",
+  "16047": "Citi Bank",
+  "16746": "Citizen Development Business Finance PLC",
+  "16056": "Commercial Bank PLC",
+  "16870": "Commercial Credit & Finance PLC",
+  "16807": "Commercial Leasing and Finance",
+  "16205": "Deutsche Bank",
+  "16454": "DFCC Bank PLC",
+  "16074": "Habib Bank Ltd",
+  "16083": "Hatton National Bank PLC",
+  "16737": "HDFC Bank",
+  "16092": "Hongkong Shanghai Bank",
+  "16384": "ICICI Bank Ltd",
+  "16108": "Indian Bank",
+  "16117": "Indian Overseas Bank",
+  "16834": "Kanrich Finance Limited",
+  "16861": "Lanka Orix Finance PLC",
+  "16773": "LB Finance PLC",
+  "16269": "MCB Bank Ltd",
+  "16913": "Mercantile Investment and Finance PLC",
+  "16898": "Merchant Bank of Sri Lanka & Finance PLC",
+  "16214": "National Development Bank PLC",
+  "16719": "National Savings Bank",
+  "16162": "Nations Trust Bank PLC",
+  "16311": "Pan Asia Banking Corporation PLC",
+  "16135": "Peoples Bank",
+  "16922": "People's Leasing & Finance PLC",
+  "16296": "Public Bank",
+  "16755": "Regional Development Bank",
+  "16278": "Sampath Bank PLC",
+  "16728": "Sanasa Development Bank",
+  "16782": "Senkadagala Finance PLC",
+  "16287": "Seylan Bank PLC",
+  "16038": "Standard Chartered Bank",
+  "16144": "State Bank of India",
+  "16764": "State Mortgage & Investment Bank",
+  "16302": "Union Bank of Colombo PLC",
+  "16716": "Vallibel Finance PLC",
+};
 
 interface Category {
     id: string;
@@ -63,6 +111,9 @@ export default function AdminPage() {
     const [showAddCategory, setShowAddCategory] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+    const [qrLoading, setQrLoading] = useState(false);
+    const [qrError, setQrError] = useState('');
+    const [qrResult, setQrResult] = useState<any>(null);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
@@ -170,6 +221,28 @@ export default function AdminPage() {
         const supabase = getSupabase();
         await supabase.auth.signOut();
         router.push('/');
+    };
+
+    const parseQR = async (qrString: string) => {
+        try {
+            const response = await fetch('/api/parse-qr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ payload: qrString })
+            });
+            const result = await response.json();
+            
+            if (result.error) {
+                setQrError(result.error);
+                return;
+            }
+            
+            if (result.data) {
+                setQrResult(result.data);
+            }
+        } catch (err) {
+            setQrError('Error parsing QR code');
+        }
     };
 
     const handleAddCategory = async () => {
@@ -638,11 +711,116 @@ export default function AdminPage() {
 
                 {activeTab === 'payment' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <h1>Payment Setup</h1>
-                        <div className="admin-card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-                            <FontAwesomeIcon icon={faCreditCard} style={{ fontSize: '3rem', color: '#ccc', marginBottom: '1rem' }} />
-                            <h3 style={{ color: '#666', marginBottom: '0.5rem' }}>Payment Setup</h3>
-                            <p style={{ color: '#999' }}>Payment setup will be available soon.</p>
+                        <h1>QR Payment Verification</h1>
+                        <div className="admin-card">
+                            <h3>Scan or Upload QR Code</h3>
+                            <p style={{ color: '#666', marginBottom: '1rem' }}>Upload a QR code image to verify payment details</p>
+                            
+                            <div style={{ marginBottom: '1rem' }}>
+                                <label style={{ 
+                                    display: 'flex', 
+                                    flexDirection: 'column', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    padding: '2rem', 
+                                    border: '2px dashed #ddd', 
+                                    borderRadius: '12px', 
+                                    cursor: 'pointer',
+                                    background: '#fafafa',
+                                    transition: 'all 0.2s'
+                                }}>
+                                    <FontAwesomeIcon icon={faImage} style={{ fontSize: '2rem', color: '#ccc', marginBottom: '0.5rem' }} />
+                                    <span style={{ color: '#666', fontWeight: 500 }}>Click to upload QR image</span>
+                                    <span style={{ color: '#999', fontSize: '0.85rem', marginTop: '0.25rem' }}>PNG, JPG up to 10MB</span>
+                                    <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+                                            
+                                            setQrLoading(true);
+                                            setQrError('');
+                                            setQrResult(null);
+                                            
+                                            try {
+                                                const qrString = await readQRFromFile(file);
+                                                
+                                                if (qrString) {
+                                                    await parseQR(qrString);
+                                                } else {
+                                                    setQrError('Could not read QR code from image');
+                                                }
+                                            } catch (err) {
+                                                setQrError('Error reading QR code');
+                                            }
+                                            setQrLoading(false);
+                                        }}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
+                            </div>
+                            
+                            {qrLoading && <p style={{ marginTop: '1rem', color: 'var(--accent)' }}>Verifying QR code...</p>}
+                            
+                            {qrError && <p style={{ marginTop: '1rem', color: 'red' }}>{qrError}</p>}
+                            
+                            {qrResult && (
+                                <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
+                                    <h4 style={{ marginBottom: '1rem' }}>Merchant Details</h4>
+                                    <div style={{ display: 'grid', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: '#666' }}>Merchant Name:</span>
+                                            <strong>{qrResult.merchant_name || 'N/A'}</strong>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: '#666' }}>City:</span>
+                                            <span>{qrResult.merchant_city || 'N/A'}</span>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: '#666' }}>Bank:</span>
+                                            <span>{bankCodeItems[qrResult.bank_code] || qrResult.bank_code || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                                        <button 
+                                            onClick={async () => {
+                                                if (!qrResult) return;
+                                                try {
+                                                    const response = await fetch('/api/admin', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            action: 'save_merchant',
+                                                            data: qrResult,
+                                                            userEmail: user?.email
+                                                        })
+                                                    });
+                                                    const result = await response.json();
+                                                    if (result.success) {
+                                                        alert('Merchant data saved successfully!');
+                                                    } else {
+                                                        alert('Error saving merchant: ' + result.error);
+                                                    }
+                                                } catch (err) {
+                                                    alert('Error saving merchant data');
+                                                }
+                                            }}
+                                            style={{
+                                                padding: '0.75rem 1.5rem',
+                                                background: 'var(--accent)',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '8px',
+                                                cursor: 'pointer',
+                                                fontWeight: 500
+                                            }}
+                                        >
+                                            Save Merchant Data
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 )}
