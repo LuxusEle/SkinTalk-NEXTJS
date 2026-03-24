@@ -484,8 +484,8 @@ export default function Home() {
                         <p style={{ color: '#777', marginBottom: '1.5rem' }}>{authMode === 'login' ? 'Sign in to continue to checkout' : 'Create an account to place your order'}</p>
                         {authError && <p style={{ color: 'red', fontSize: '0.85rem', marginBottom: '1rem' }}>{authError}</p>}
                         <div className="auth-form">
-                            <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} />
-                            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
                             <button className="hero-cta" onClick={handleAuth} disabled={authLoading} style={{ width: '100%' }}>{authLoading ? 'Please wait...' : authMode === 'login' ? 'Sign In' : 'Create Account'}</button>
                         </div>
                         <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.9rem' }}>
