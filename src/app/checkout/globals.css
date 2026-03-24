@@ -320,8 +320,13 @@
     .checkout-page .checkout-grid.with-qr {
         grid-template-columns: 1fr;
     }
+    .checkout-page .checkout-grid.with-qr .checkout-qr-section {
+        grid-column: 1;
+        grid-row: auto;
+        position: static;
+        margin-top: 2rem;
+    }
     .checkout-page .checkout-qr-section {
-        grid-column: span 1;
         position: static;
     }
 }
@@ -329,8 +334,5 @@
 @media (max-width: 768px) {
     .checkout-page .checkout-grid.with-qr {
         grid-template-columns: 1fr;
-    }
-    .checkout-page .checkout-qr-section {
-        grid-column: span 1;
     }
 }

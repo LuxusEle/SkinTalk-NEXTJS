@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMapMarkerAlt, faCreditCard, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
@@ -43,6 +43,13 @@ export default function CheckoutPage() {
     const [showQR, setShowQR] = useState(false);
     const [orderPlaced, setOrderPlaced] = useState(false);
     const [invoiceNumber, setInvoiceNumber] = useState('');
+    const qrRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (showQR && qrRef.current) {
+            qrRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [showQR]);
 
     useEffect(() => {
         setInvoiceNumber(`INV-${Math.floor(100000 + Math.random() * 900000)}`);
@@ -298,7 +305,7 @@ export default function CheckoutPage() {
                     </div>
 
                     {showQR && (
-                        <div className="checkout-qr-section">
+                        <div className="checkout-qr-section" ref={qrRef}>
                             <div className="qr-card">
                                 <h3>Scan to Pay</h3>
                                 <p className="qr-subtitle">Scan the QR code with your bank app to complete payment</p>
