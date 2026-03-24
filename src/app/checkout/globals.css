@@ -14,7 +14,9 @@
 .checkout-page .checkout-header .container {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    position: relative;
+    justify-content: center;
+    width: 100%;
 }
 
 .checkout-page .back-link {
@@ -25,6 +27,8 @@
     text-decoration: none;
     font-size: 0.9rem;
     transition: color 0.2s;
+    position: absolute;
+    left: 2rem;
 }
 
 .checkout-page .back-link:hover {
