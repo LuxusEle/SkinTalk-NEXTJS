@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faMapMarkerAlt, faCreditCard, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
+import { motion } from 'framer-motion';
 import { getSupabase } from '@/lib/supabase';
 import Link from 'next/link';
 import './globals.css';
@@ -44,6 +45,7 @@ export default function CheckoutPage() {
     const [orderPlaced, setOrderPlaced] = useState(false);
     const [invoiceNumber, setInvoiceNumber] = useState('');
     const [qrCode, setQrCode] = useState<string | null>(null);
+    const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'idle'>('idle');
     const qrRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -140,6 +142,41 @@ export default function CheckoutPage() {
 
             setOrderPlaced(true);
             setShowQR(true);
+            setPaymentStatus('pending');
+
+            // --- REALTIME LISTENER ---
+            const channel = supabase
+                .channel(`order-${invoiceNumber}`)
+                .on(
+                    'postgres_changes',
+                    { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'orders', 
+                        filter: `invoice_number=eq.${invoiceNumber}` 
+                    },
+                    (payload) => {
+                        if (payload.new && payload.new.status === 'paid') {
+                            setPaymentStatus('paid');
+                            
+                            // 🎙️ TTS (Speak Amount)
+                            const speech = new SpeechSynthesisUtterance(`${grandTotal} rupees received`);
+                            speech.lang = 'en-US';
+                            speech.rate = 0.9;
+                            window.speechSynthesis.speak(speech);
+
+                            // Redirect after 5 seconds
+                            setTimeout(() => {
+                                router.push('/');
+                            }, 5000);
+                        }
+                    }
+                )
+                .subscribe();
+
+            return () => {
+                supabase.removeChannel(channel);
+            }
         } catch (err) {
             alert('Error placing order');
         }
@@ -313,23 +350,47 @@ export default function CheckoutPage() {
                     {showQR && (
                         <div className="checkout-qr-section" ref={qrRef}>
                             <div className="qr-card">
-                                <h3>Scan to Pay</h3>
-                                <p className="qr-subtitle">Scan the QR code with your bank app to complete payment</p>
-                                <div className="qr-code">
-                                    {qrCode ? (
-                                        <img src={qrCode} alt="Payment QR Code" style={{ width: '100%', height: 'auto', maxWidth: '300px' }} />
-                                    ) : (
-                                        <div className="qr-placeholder" style={{ width: '200px', height: '200px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
-                                            <p>Generating QR...</p>
+                                {paymentStatus !== 'paid' ? (
+                                    <>
+                                        <h3>Scan to Pay</h3>
+                                        <p className="qr-subtitle">Scan the QR code with your bank app to complete payment</p>
+                                        <div className="qr-code">
+                                            {qrCode ? (
+                                                <img src={qrCode} alt="Payment QR Code" style={{ width: '100%', height: 'auto', maxWidth: '300px' }} />
+                                            ) : (
+                                                <div className="qr-placeholder" style={{ width: '200px', height: '200px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+                                                    <p>Generating QR...</p>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
-                                <p className="qr-amount">LKR {grandTotal.toFixed(2)}</p>
-                                <p className="qr-note">Show this QR code to complete your payment</p>
-                                <div className="order-success">
-                                    <p>Order placed successfully!</p>
-                                    <p className="success-note">Complete payment to confirm your order</p>
-                                </div>
+                                        <p className="qr-amount">LKR {grandTotal.toFixed(2)}</p>
+                                        <p className="qr-note">Show this QR code to complete your payment</p>
+                                        
+                                        {paymentStatus === 'pending' && (
+                                            <div className="order-pending" style={{ marginTop: '1.5rem', textAlign: 'center', padding: '1rem', background: '#fff9e6', borderRadius: '8px', border: '1px solid #ffe699' }}>
+                                                <div className="spinner-small" style={{ margin: '0 auto 0.5rem' }}></div>
+                                                <p style={{ color: '#856404', fontWeight: 600 }}>Waiting for payment...</p>
+                                                <p style={{ fontSize: '0.85rem', color: '#856404' }}>Keep this screen open while paying</p>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <motion.div 
+                                        className="order-success-full" 
+                                        initial={{ scale: 0.8, opacity: 0 }} 
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        style={{ textAlign: 'center', padding: '2.5rem 1rem' }}
+                                    >
+                                        <div style={{ fontSize: '5rem', marginBottom: '1.5rem' }}>✨</div>
+                                        <h2 style={{ color: '#237804', fontWeight: 800, fontSize: '1.8rem', marginBottom: '1rem' }}>Order Placed!</h2>
+                                        <p style={{ color: '#52c41a', fontSize: '1.1rem', fontWeight: 500 }}>Payment of LKR {grandTotal.toFixed(2)} Received 🎉</p>
+                                        <p style={{ color: '#777', marginTop: '1.5rem' }}>Thank you for shopping with SkinTalk. Your order is being processed.</p>
+                                        <div style={{ marginTop: '2rem' }}>
+                                            <div className="spinner-small" style={{ margin: '0 auto 0.5rem', borderTopColor: '#52c41a' }}></div>
+                                            <p style={{ fontSize: '0.85rem', color: '#999' }}>Redirecting you back to Home...</p>
+                                        </div>
+                                    </motion.div>
+                                )}
                             </div>
                         </div>
                     )}
