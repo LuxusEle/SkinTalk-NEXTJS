@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
                         const qrResponse = await fetch('https://b2u-qr-worker.qr4pos.workers.dev/generate', {
                             method: 'POST',
                             headers: {
-                                'Authorization': 'Bearer skintalk-qr-key-secret-2026',
+                                'Authorization': `Bearer ${process.env.QR_WORKER_API_KEY}`,
                                 'Content-Type': 'application/json'
                             },
                             body: JSON.stringify({
@@ -137,8 +137,8 @@ export async function POST(request: NextRequest) {
                                 merchant_city: merchant.merchant_city,
                                 mcc: merchant.mcc,
                                 currency_code: merchant.currency_code,
-                                country_code: merchant.country_code,
-                                format: 'base64'
+                                country_code: merchant.country_code
+                                // format: 'base64' is now default
                             })
                         });
                         const qrData: any = await qrResponse.json();
