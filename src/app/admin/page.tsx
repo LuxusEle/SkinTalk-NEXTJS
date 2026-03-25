@@ -84,6 +84,8 @@ interface Order {
 interface UserProfile {
     id: string;
     email: string;
+    name?: string;
+    contact_number?: string;
     created_at: string;
     total_spent?: number;
 }
@@ -703,7 +705,9 @@ export default function AdminPage() {
                             <table className="admin-table">
                                 <thead>
                                     <tr>
+                                        <th>Name</th>
                                         <th>Email</th>
+                                        <th>Contact</th>
                                         <th>Joined</th>
                                         <th>Total Spent</th>
                                     </tr>
@@ -711,7 +715,9 @@ export default function AdminPage() {
                                 <tbody>
                                     {users.map(user => (
                                         <tr key={user.id}>
+                                            <td style={{ fontWeight: 500 }}>{user.name || '-'}</td>
                                             <td>{user.email}</td>
+                                            <td>{user.contact_number || '-'}</td>
                                             <td>{new Date(user.created_at).toLocaleDateString()}</td>
                                             <td style={{ fontWeight: 600, color: 'var(--accent)' }}>LKR {(user.total_spent || 0).toFixed(2)}</td>
                                         </tr>

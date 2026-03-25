@@ -56,6 +56,8 @@ export default function Home() {
     const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
@@ -99,12 +101,23 @@ export default function Home() {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
             } else {
-                const { error } = await supabase.auth.signUp({ email, password });
+                const { error } = await supabase.auth.signUp({ 
+                    email, 
+                    password,
+                    options: {
+                        data: {
+                            name: name,
+                            contact_number: phoneNumber
+                        }
+                    }
+                });
                 if (error) throw error;
             }
             setAuthModalOpen(false);
             setEmail('');
             setPassword('');
+            setName('');
+            setPhoneNumber('');
         } catch (err: unknown) {
             const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
             setAuthError(errorMessage);
@@ -479,6 +492,12 @@ export default function Home() {
                         <p style={{ color: '#777', marginBottom: '1.5rem' }}>{authMode === 'login' ? 'Sign in to continue to checkout' : 'Create an account to place your order'}</p>
                         {authError && <p style={{ color: 'red', fontSize: '0.85rem', marginBottom: '1rem' }}>{authError}</p>}
                         <div className="auth-form">
+                            {authMode === 'signup' && (
+                                <>
+                                    <input type="text" placeholder="Full Name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                                    <input type="tel" placeholder="Contact Number" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
+                                </>
+                            )}
                             <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
                             <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAuth()} />
                             <button className="hero-cta" onClick={handleAuth} disabled={authLoading} style={{ width: '100%' }}>{authLoading ? 'Please wait...' : authMode === 'login' ? 'Sign In' : 'Create Account'}</button>
