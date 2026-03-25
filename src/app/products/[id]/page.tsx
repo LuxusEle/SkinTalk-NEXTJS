@@ -25,6 +25,18 @@ interface CartItem {
     product_id: string;
 }
 
+interface Review {
+    id: string;
+    product_id: string;
+    user_id: string;
+    rating: number;
+    comment: string;
+    created_at: string;
+    user_profiles?: {
+        name: string;
+    };
+}
+
 function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
     const ref = useRef(null);
     const isInView = useInView(ref, { once: true, margin: "-100px" });
@@ -59,6 +71,13 @@ export default function ProductDetailPage() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Review States
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [newRating, setNewRating] = useState(5);
+    const [newComment, setNewComment] = useState('');
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [averageRating, setAverageRating] = useState(5);
+
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
@@ -81,8 +100,56 @@ export default function ProductDetailPage() {
     }, []);
 
     useEffect(() => {
-        if (id) loadProductDetails();
+        if (id) {
+            loadProductDetails();
+            loadReviews();
+        }
     }, [id]);
+
+    const loadReviews = async () => {
+        const supabase = getSupabase();
+        const { data } = await supabase
+            .from('product_reviews')
+            .select('*, user_profiles(name)')
+            .eq('product_id', id)
+            .order('created_at', { ascending: false });
+        
+        if (data) {
+            setReviews(data);
+            if (data.length > 0) {
+                const avg = data.reduce((acc, r) => acc + r.rating, 0) / data.length;
+                setAverageRating(Math.round(avg * 10) / 10);
+            }
+        }
+    };
+
+    const submitReview = async () => {
+        if (!user) {
+            setAuthModalOpen(true);
+            return;
+        }
+        if (!newComment.trim()) return;
+
+        setSubmittingReview(true);
+        const supabase = getSupabase();
+        const { error } = await supabase
+            .from('product_reviews')
+            .insert({
+                product_id: id,
+                user_id: user.id,
+                rating: newRating,
+                comment: newComment
+            });
+        
+        if (!error) {
+            setNewComment('');
+            setNewRating(5);
+            loadReviews();
+        } else {
+            alert('Error submitting review: ' + error.message);
+        }
+        setSubmittingReview(false);
+    };
 
     const loadProductDetails = async () => {
         setLoading(true);
@@ -242,13 +309,17 @@ export default function ProductDetailPage() {
                                 <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', marginBottom: '1rem', color: '#1a1a1a' }}>{product.name}</h1>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                     <h2 style={{ fontSize: '1.8rem', fontWeight: '500', color: '#333' }}>LKR {product.price.toFixed(2)}</h2>
-                                    <div style={{ color: '#FFD700', fontSize: '0.9rem' }}>
-                                        <FontAwesomeIcon icon={faStar} />
-                                        <FontAwesomeIcon icon={faStar} />
-                                        <FontAwesomeIcon icon={faStar} />
-                                        <FontAwesomeIcon icon={faStar} />
-                                        <FontAwesomeIcon icon={faStar} />
-                                        <span style={{ color: '#888', marginLeft: '0.5rem' }}>(12 Reviews)</span>
+                                    <div style={{ color: '#FFD700', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ display: 'flex', gap: '2px' }}>
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <FontAwesomeIcon 
+                                                    key={star} 
+                                                    icon={faStar} 
+                                                    style={{ color: star <= Math.round(averageRating) ? '#FFD700' : '#ddd' }} 
+                                                />
+                                            ))}
+                                        </div>
+                                        <span style={{ color: '#888', fontSize: '0.9rem', fontWeight: '400' }}>({reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'})</span>
                                     </div>
                                 </div>
 
@@ -332,6 +403,81 @@ export default function ProductDetailPage() {
                                 </div>
                             </FadeIn>
                         )}
+
+                        <FadeIn>
+                            <div style={{ borderTop: '1px solid #eee', paddingTop: '4rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
+                                    <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem' }}>Customer Reviews</h3>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{averageRating}</div>
+                                        <div style={{ color: '#FFD700' }}>
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <FontAwesomeIcon key={star} icon={faStar} style={{ color: star <= Math.round(averageRating) ? '#FFD700' : '#ddd' }} />
+                                            ))}
+                                        </div>
+                                        <p style={{ color: '#888', fontSize: '0.9rem' }}>Based on {reviews.length} reviews</p>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '4rem' }}>
+                                    {/* Write a Review Form */}
+                                    <div style={{ position: 'sticky', top: '100px', alignSelf: 'start', background: '#fff', padding: '2rem', borderRadius: '12px', border: '1px solid #f0f0f0' }}>
+                                        <h4 style={{ fontSize: '1.2rem', marginBottom: '1.5rem' }}>Write a Review</h4>
+                                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                                            {[1, 2, 3, 4, 5].map((star) => (
+                                                <FontAwesomeIcon 
+                                                    key={star} 
+                                                    icon={faStar} 
+                                                    style={{ cursor: 'pointer', color: star <= newRating ? '#FFD700' : '#ddd', fontSize: '1.2rem' }}
+                                                    onClick={() => setNewRating(star)}
+                                                />
+                                            ))}
+                                        </div>
+                                        <textarea 
+                                            placeholder="Share your experience with this product..." 
+                                            value={newComment} 
+                                            onChange={(e) => setNewComment(e.target.value)}
+                                            style={{ width: '100%', minHeight: '120px', padding: '1rem', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '1rem', fontFamily: 'inherit', resize: 'vertical' }}
+                                        />
+                                        <button 
+                                            className="hero-cta" 
+                                            style={{ width: '100%', background: '#000', color: '#fff', opacity: submittingReview ? 0.7 : 1 }}
+                                            onClick={submitReview}
+                                            disabled={submittingReview}
+                                        >
+                                            {submittingReview ? 'Posting...' : 'Post Review'}
+                                        </button>
+                                        {!user && <p style={{ fontSize: '0.8rem', color: '#888', marginTop: '1rem', textAlign: 'center' }}>Please sign in to post a review.</p>}
+                                    </div>
+
+                                    {/* Reviews List */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                                        {reviews.length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '4rem 0', background: '#fcfcfc', borderRadius: '12px', color: '#888' }}>
+                                                No reviews yet. Be the first to share your thoughts!
+                                            </div>
+                                        ) : (
+                                            reviews.map((review) => (
+                                                <div key={review.id} style={{ padding: '2rem', background: '#fff', borderRadius: '12px', border: '1px solid #f9f9f9', boxShadow: '0 4px 12px rgba(0,0,0,0.02)' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                        <div>
+                                                            <h5 style={{ fontSize: '1.1rem', marginBottom: '0.25rem' }}>{review.user_profiles?.name || 'Verified Customer'}</h5>
+                                                            <div style={{ color: '#FFD700', fontSize: '0.8rem', display: 'flex', gap: '2px' }}>
+                                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                                    <FontAwesomeIcon key={star} icon={faStar} style={{ color: star <= review.rating ? '#FFD700' : '#ddd' }} />
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <span style={{ fontSize: '0.8rem', color: '#aaa' }}>{new Date(review.created_at).toLocaleDateString()}</span>
+                                                    </div>
+                                                    <p style={{ color: '#555', lineHeight: '1.6', fontSize: '1rem' }}>{review.comment}</p>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </FadeIn>
                     </div>
 
                     {/* Related Products */}
