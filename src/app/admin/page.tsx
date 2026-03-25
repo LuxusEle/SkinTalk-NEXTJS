@@ -67,6 +67,8 @@ interface Product {
     image: string;
     category: string;
     quantity: number;
+    description: string;
+    item_code?: string;
     created_at: string;
 }
 
@@ -106,6 +108,8 @@ export default function AdminPage() {
     const [newProductPrice, setNewProductPrice] = useState('');
     const [newProductQuantity, setNewProductQuantity] = useState('');
     const [newProductCategory, setNewProductCategory] = useState('General');
+    const [newProductDescription, setNewProductDescription] = useState('');
+    const [newProductItemCode, setNewProductItemCode] = useState('');
     const [newProductImage, setNewProductImage] = useState<File | null>(null);
     const [newProductImageName, setNewProductImageName] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -312,7 +316,9 @@ export default function AdminPage() {
                 price: parseFloat(newProductPrice),
                 quantity: parseInt(newProductQuantity) || 0,
                 image: imgUrl,
-                category: newProductCategory
+                category: newProductCategory,
+                description: newProductDescription,
+                item_code: newProductItemCode
             };
             if (editingProduct) {
                 data.id = editingProduct.id;
@@ -374,6 +380,8 @@ export default function AdminPage() {
         setNewProductPrice('');
         setNewProductQuantity('');
         setNewProductCategory('General');
+        setNewProductDescription('');
+        setNewProductItemCode('');
         setNewProductImage(null);
         setNewProductImageName('');
         setEditingProduct(null);
@@ -386,6 +394,8 @@ export default function AdminPage() {
         setNewProductPrice(product.price.toString());
         setNewProductQuantity(product.quantity?.toString() || '0');
         setNewProductCategory(product.category || 'General');
+        setNewProductDescription(product.description || '');
+        setNewProductItemCode(product.item_code || '');
         setNewProductImage(null);
         setNewProductImageName('');
         setIsCategoryDropdownOpen(false);
@@ -549,8 +559,9 @@ export default function AdminPage() {
                         
                         <div className="admin-card">
                             <h3><FontAwesomeIcon icon={faPlus} /> {editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-                            <div className="admin-form-grid">
+                            <div className="admin-form-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
                                 <input type="text" placeholder="Product Name" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} />
+                                <input type="text" placeholder="Item Code" value={newProductItemCode} onChange={(e) => setNewProductItemCode(e.target.value)} />
                                 <input type="number" placeholder="Price" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
                                 <input type="number" placeholder="Quantity" value={newProductQuantity} onChange={(e) => setNewProductQuantity(e.target.value)} />
                                 {categories.length === 0 ? (
@@ -611,8 +622,14 @@ export default function AdminPage() {
                                     </label>
                                     <input type="file" accept="image/*" onChange={(e) => { setNewProductImage(e.target.files?.[0] || null); setNewProductImageName(e.target.files?.[0]?.name || ''); }} />
                                 </div>
+                                <textarea 
+                                    placeholder="Product Description" 
+                                    value={newProductDescription} 
+                                    onChange={(e) => setNewProductDescription(e.target.value)}
+                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', marginTop: '1rem' }}
+                                />
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem' }}>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
                                 <button className="admin-btn primary" onClick={handleSaveProduct} disabled={uploading}>
                                     {uploading ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
                                 </button>
@@ -630,6 +647,7 @@ export default function AdminPage() {
                                 <thead>
                                     <tr>
                                         <th>Image</th>
+                                        <th>Code</th>
                                         <th>Name</th>
                                         <th>Category</th>
                                         <th>Price</th>
@@ -641,6 +659,7 @@ export default function AdminPage() {
                                     {products.map(product => (
                                         <tr key={product.id} onClick={() => handleEditProduct(product)} style={{ cursor: 'pointer' }}>
                                             <td><img src={product.image} alt={product.name} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }} /></td>
+                                            <td style={{ fontWeight: 600 }}>{product.item_code || '-'}</td>
                                             <td>{product.name}</td>
                                             <td>{product.category}</td>
                                             <td>LKR {product.price.toFixed(2)}</td>
