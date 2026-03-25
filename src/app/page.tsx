@@ -301,12 +301,7 @@ export default function Home() {
             <motion.header className={`header ${scrolled ? 'scrolled' : ''}`} initial={{ y: -100 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
                 <div className="container nav-content">
                     <div className="logo">
-                        <img src="/Gemini_Generated_Image_al4h3ual4h3ual4h.png" alt="SkinTalk" style={{ height: 50, objectFit: 'contain' }} />
-                        <div className="logo-tagline-container">
-                            <span className="logo-tagline">PURE</span>
-                            <span className="logo-tagline">CLEAN</span>
-                            <span className="logo-tagline">ELEGANT</span>
-                        </div>
+                        <img src="/logo.png" alt="SkinTalk" style={{ height: 90, objectFit: 'contain' }} />
                     </div>
                     <nav className="nav-links">
                         <a href="#home" className="nav-link">Home</a>
