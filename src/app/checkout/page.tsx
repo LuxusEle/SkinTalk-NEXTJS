@@ -363,7 +363,7 @@ export default function CheckoutPage() {
                                                 </div>
                                             )}
                                         </div>
-                                        <p className="qr-amount">LKR {grandTotal.toFixed(2)}</p>
+
                                         <p className="qr-note">Show this QR code to complete your payment</p>
                                         
                                         {paymentStatus === 'pending' && (
