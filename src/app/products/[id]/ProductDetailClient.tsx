@@ -537,6 +537,30 @@ export default function ProductDetailClient({
                         <div className="footer-logo"><span className="logo-text">SkinTalk</span><span className="logo-tagline">Clean Beauty Ethics</span></div>
                         <p style={{ color: '#777', fontSize: '0.95rem', maxWidth: 350 }}>Redefining the standard of clean beauty with products that deliver visible results without compromise.</p>
                     </div>
+                    <div className="footer-col">
+                        <h4>Explore</h4>
+                        <ul>
+                            <li><a onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>Home</a></li>
+                            <li><a onClick={() => router.push('/products')} style={{ cursor: 'pointer' }}>Shop</a></li>
+                            <li><a onClick={() => router.push('/about')} style={{ cursor: 'pointer' }}>Our Story</a></li>
+                        </ul>
+                    </div>
+                    <div className="footer-col">
+                        <h4>Support</h4>
+                        <ul>
+                            <li><a onClick={() => router.push('/terms')} style={{ cursor: 'pointer' }}>Terms & Conditions</a></li>
+                            <li><a href="mailto:sales@skintalks.lk">Email Us</a></li>
+                            <li><a href="https://wa.me/94767678984" target="_blank">WhatsApp Us</a></li>
+                        </ul>
+                    </div>
+                    <div className="newsletter-form" style={{ maxWidth: '300px' }}>
+                        <h4 style={{ marginBottom: '1rem', color: '#1a1a1a' }}>Stay Radiant</h4>
+                        <p style={{ fontSize: '0.85rem', color: '#777', marginBottom: '1rem' }}>Sign up for exclusive beauty tips and early access to drops.</p>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <input type="email" placeholder="Email Address" style={{ padding: '0.8rem', border: '1px solid #eee', borderRadius: '4px', flex: 1, fontSize: '0.9rem' }} />
+                            <button className="hero-cta" style={{ padding: '0.8rem 1.5rem' }}>Join</button>
+                        </div>
+                    </div>
                 </div>
                 <div className="container footer-bottom">&copy; 2026 SkinTalk Cosmetics. Artfully Crafted.</div>
             </footer>

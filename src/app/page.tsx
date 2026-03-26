@@ -319,9 +319,9 @@ export default function Home() {
                     </div>
                     <nav className="nav-links">
                         <a href="#home" className="nav-link">Home</a>
+                        <a href="#about" className="nav-link">Our Story</a>
                         <a href="#shop" className="nav-link">Shop</a>
                         <a href="#collections" className="nav-link">Collections</a>
-                        <a href="#about" className="nav-link">Our Story</a>
                     </nav>
                     <div className="nav-actions">
                         <div className="search-container">
@@ -449,18 +449,21 @@ export default function Home() {
                         ))}
                     </div>
                     <FadeIn delay={0.4}>
-                        <div style={{ textAlign: 'center', marginTop: '4rem' }}>
+                        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
                             <button className="hero-cta" onClick={() => router.push('/products')}>See All Products</button>
                         </div>
                     </FadeIn>
                 </div>
             </section>
 
-            <section className="about" id="about" style={{ padding: '120px 0', background: '#fffcfd', textAlign: 'center' }}>
+            <section className="about" id="about" style={{ padding: '20px 0 100px 0', background: '#fffcfd', textAlign: 'center' }}>
                 <div className="container" style={{ maxWidth: 800 }}>
                     <FadeIn><h2 className="section-title">The SkinTalk Promise</h2></FadeIn>
                     <FadeIn delay={0.1}><p style={{ fontSize: '1.1rem', color: '#777', marginBottom: '2rem' }}>Derived from nature, perfected by science. SkinTalk is committed to providing clean, effective skincare that respects your skin and the planet. No fillers, no toxins—just pure results.</p></FadeIn>
-                    <FadeIn delay={0.2}><div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1.3rem', color: 'var(--accent)' }}>&quot;Your skin is your best accessory. Take care of it.&quot;</div></FadeIn>
+                    <FadeIn delay={0.2}><div style={{ fontFamily: 'var(--font-serif)', fontStyle: 'italic', fontSize: '1.3rem', color: 'var(--accent)', marginBottom: '3rem' }}>&quot;Your skin is your best accessory. Take care of it.&quot;</div></FadeIn>
+                    <FadeIn delay={0.3}>
+                        <button className="hero-cta" onClick={() => router.push('/about')}>Discover Our Story</button>
+                    </FadeIn>
                 </div>
             </section>
 
@@ -471,8 +474,22 @@ export default function Home() {
                         <p style={{ color: '#777', fontSize: '0.95rem', maxWidth: 350 }}>Redefining the standard of clean beauty with products that deliver visible results without compromise.</p>
                     </div>
                     <div className="footer-col"><h4>Concerns</h4><ul><li><a href="#">Anti-Aging</a></li><li><a href="#">Brightening</a></li><li><a href="#">Hydration</a></li><li><a href="#">Acne-Prone</a></li></ul></div>
-                    <div className="footer-col"><h4>Support</h4><ul><li><a href="#">Shipping Policy</a></li><li><a href="#">Sustainability</a></li><li><a href="#">Contact Us</a></li><li><a href="#">Stockists</a></li></ul></div>
-                    <div className="footer-newsletter"><h4>Stay Radiant</h4><p>Sign up for exclusive beauty tips and early access to drops.</p><div className="newsletter-form"><input type="email" placeholder="Email Address" /><button className="hero-cta">Join</button></div></div>
+                    <div className="footer-col">
+                        <h4>About</h4>
+                        <ul>
+                            <li><a onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>Home</a></li>
+                            <li><a onClick={() => router.push('/products')} style={{ cursor: 'pointer' }}>Shop</a></li>
+                            <li><a onClick={() => router.push('/about')} style={{ cursor: 'pointer' }}>Our Story</a></li>
+                        </ul>
+                    </div>
+                    <div className="footer-col">
+                        <h4>Support</h4>
+                        <ul>
+                            <li><a onClick={() => router.push('/terms')} style={{ cursor: 'pointer' }}>Terms & Conditions</a></li>
+                            <li><a href="mailto:sales@skintalks.lk">Email Us</a></li>
+                            <li><a href="https://wa.me/94767678984" target="_blank">WhatsApp Us</a></li>
+                        </ul>
+                    </div>
                 </div>
                 <div className="container footer-bottom">&copy; 2026 SkinTalk Cosmetics. Artfully Crafted.</div>
             </footer>
