@@ -132,6 +132,8 @@ export default function AdminPage() {
     const [newProductImageName, setNewProductImageName] = useState('');
     const [uploading, setUploading] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [newCategoryImage, setNewCategoryImage] = useState<File | null>(null);
+    const [newCategoryImageName, setNewCategoryImageName] = useState('');
     const [showAddCategory, setShowAddCategory] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
@@ -284,32 +286,75 @@ export default function AdminPage() {
 
     const handleAddCategory = async () => {
         if (!newCategoryName.trim()) {
+            alert('Please enter a category name');
             return;
         }
         if (!user) return;
         
-        const res = await fetch('/api/admin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'add_category',
-                data: { name: newCategoryName.trim() },
-                userEmail: user.email
-            })
-        });
-        const json = await res.json();
-        
-        if (json.error) {
-            if (json.error.includes('duplicate')) {
-                alert('Category already exists');
-            } else {
-                alert('Error adding category: ' + json.error);
+        setUploading(true);
+        let imageUrl = '';
+
+        try {
+            if (newCategoryImage) {
+                const fileExt = newCategoryImage.name.split('.').pop();
+                const fileName = `cat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+                
+                const reader = new FileReader();
+                const base64Promise = new Promise<string>((resolve) => {
+                    reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                    reader.readAsDataURL(newCategoryImage);
+                });
+                
+                const base64 = await base64Promise;
+                
+                const uploadRes = await fetch('/api/admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'upload_image',
+                        data: { imageData: base64, fileName, bucket: 'categories' },
+                        userEmail: user.email
+                    })
+                });
+                const uploadJson = await uploadRes.json();
+                
+                if (uploadJson.error) {
+                    alert('Error uploading category image: ' + uploadJson.error);
+                    setUploading(false);
+                    return;
+                }
+                imageUrl = uploadJson.url;
             }
-        } else {
-            setNewCategoryName('');
-            setShowAddCategory(false);
-            loadData();
-            if (json.data) setNewProductCategory(json.data.name);
+
+            const res = await fetch('/api/admin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'add_category',
+                    data: { name: newCategoryName.trim(), image_url: imageUrl },
+                    userEmail: user.email
+                })
+            });
+            const json = await res.json();
+            
+            if (json.error) {
+                if (json.error.includes('duplicate')) {
+                    alert('Category already exists');
+                } else {
+                    alert('Error adding category: ' + json.error);
+                }
+            } else {
+                setNewCategoryName('');
+                setNewCategoryImage(null);
+                setNewCategoryImageName('');
+                setShowAddCategory(false);
+                loadData();
+                if (json.data) setNewProductCategory(json.data.name);
+            }
+        } catch (err) {
+            alert('An unexpected error occurred');
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -659,57 +704,45 @@ export default function AdminPage() {
                                 <input type="text" placeholder="Item Code" value={newProductItemCode} onChange={(e) => setNewProductItemCode(e.target.value)} />
                                 <input type="number" placeholder="Price" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
                                 <input type="number" placeholder="Quantity" value={newProductQuantity} onChange={(e) => setNewProductQuantity(e.target.value)} />
-                                {categories.length === 0 ? (
-                                    <input type="text" placeholder="Category" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)} />
-                                ) : !showAddCategory ? (
-                                    <div className="custom-select-wrapper" style={{ position: 'relative' }}>
-                                        <div 
-                                            className={`admin-form-custom-select-trigger ${isCategoryDropdownOpen ? 'open' : ''}`}
-                                            onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                                        >
-                                            {newProductCategory}
-                                        </div>
-                                        {isCategoryDropdownOpen && (
-                                            <div className="custom-select-dropdown">
-                                                {categories.map(cat => (
+                                <div style={{ gridColumn: 'span 1', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    {categories.length === 0 ? (
+                                        <input type="text" placeholder="Category" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)} style={{ flex: 1 }} />
+                                    ) : (
+                                        <div className="custom-select-wrapper" style={{ position: 'relative', flex: 1 }}>
+                                            <div 
+                                                className={`admin-form-custom-select-trigger ${isCategoryDropdownOpen ? 'open' : ''}`}
+                                                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                            >
+                                                {newProductCategory}
+                                            </div>
+                                            {isCategoryDropdownOpen && (
+                                                <div className="custom-select-dropdown">
+                                                    {categories.map(cat => (
+                                                        <div 
+                                                            key={cat.id}
+                                                            className="custom-select-option"
+                                                            onClick={() => {
+                                                                setNewProductCategory(cat.name);
+                                                                setIsCategoryDropdownOpen(false);
+                                                            }}
+                                                        >
+                                                            {cat.name}
+                                                        </div>
+                                                    ))}
                                                     <div 
-                                                        key={cat.id}
-                                                        className="custom-select-option"
+                                                        className="custom-select-option add-new"
                                                         onClick={() => {
-                                                            setNewProductCategory(cat.name);
+                                                            setTimeout(() => setShowAddCategory(true), 10);
                                                             setIsCategoryDropdownOpen(false);
                                                         }}
                                                     >
-                                                        {cat.name}
+                                                        + Add new category
                                                     </div>
-                                                ))}
-                                                <div 
-                                                    className="custom-select-option add-new"
-                                                    onClick={() => {
-                                                        setTimeout(() => setShowAddCategory(true), 10);
-                                                        setIsCategoryDropdownOpen(false);
-                                                    }}
-                                                >
-                                                    + Add new category
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                                        <input 
-                                            type="text" 
-                                            placeholder="New category name" 
-                                            value={newCategoryName} 
-                                            onChange={(e) => setNewCategoryName(e.target.value)}
-                                            onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
-                                            autoFocus
-                                            style={{ padding: '0.75rem', border: '1px solid #ddd', borderRadius: '8px', fontSize: '0.95rem', flex: 1 }}
-                                        />
-                                        <button className="admin-btn primary" onClick={handleAddCategory}>Add</button>
-                                        <button className="admin-btn" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); }} style={{ background: '#ddd', color: '#333' }}>Cancel</button>
-                                    </div>
-                                )}
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="file-input-wrapper">
                                     <label>
                                         <FontAwesomeIcon icon={faImage} /> 
@@ -808,6 +841,61 @@ export default function AdminPage() {
                                 </tbody>
                             </table>
                         </div>
+
+                        {showAddCategory && (
+                            <div className="admin-modal-overlay">
+                                <div className="admin-modal">
+                                    <div className="admin-modal-header">
+                                        <h3>Add New Category</h3>
+                                        <button className="close-btn" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryImage(null); setNewCategoryImageName(''); }}>
+                                            <FontAwesomeIcon icon={faTimes} />
+                                        </button>
+                                    </div>
+                                    <div className="admin-modal-body">
+                                        <div className="admin-form-group">
+                                            <label>Category Name</label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="Enter category name" 
+                                                value={newCategoryName} 
+                                                onChange={(e) => setNewCategoryName(e.target.value)}
+                                                autoFocus
+                                            />
+                                        </div>
+                                        <div className="admin-form-group">
+                                            <label>Category Image</label>
+                                            <div className="file-input-wrapper">
+                                                <label>
+                                                    <FontAwesomeIcon icon={faImage} /> 
+                                                    {newCategoryImageName ? newCategoryImageName : 'Upload Category Image'}
+                                                </label>
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    onChange={(e) => { 
+                                                        setNewCategoryImage(e.target.files?.[0] || null); 
+                                                        setNewCategoryImageName(e.target.files?.[0]?.name || ''); 
+                                                    }} 
+                                                />
+                                            </div>
+                                            {newCategoryImage && (
+                                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+                                                    Selected: {newCategoryImageName}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="admin-modal-footer">
+                                        <button className="admin-btn" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryImage(null); setNewCategoryImageName(''); }} style={{ background: '#eee', color: '#333' }}>
+                                            Cancel
+                                        </button>
+                                        <button className="admin-btn primary" onClick={handleAddCategory} disabled={uploading}>
+                                            {uploading ? 'Adding...' : 'Add Category'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </motion.div>
                 )}
 

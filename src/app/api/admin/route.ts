@@ -93,8 +93,11 @@ export async function POST(request: NextRequest) {
             }
 
             case 'add_category': {
-                const { name } = data;
-                const { data: category, error } = await adminClient.from('categories').insert({ name }).select().single();
+                const { name, image_url } = data;
+                const { data: category, error } = await adminClient.from('categories').insert({ 
+                    name,
+                    image_url 
+                }).select().single();
                 
                 if (error) return NextResponse.json({ error: error.message }, { status: 500 });
                 return NextResponse.json({ success: true, data: category });
@@ -182,17 +185,20 @@ export async function POST(request: NextRequest) {
             }
 
             case 'upload_image': {
-                const { imageData, fileName } = data;
+                const { imageData, fileName, bucket = 'products' } = data;
+                
+                // Ensure bucket exists or just try to upload
                 const { data: uploadData, error } = await adminClient.storage
-                    .from('products')
+                    .from(bucket)
                     .upload(fileName, Buffer.from(imageData, 'base64'), {
-                        contentType: 'image/*'
+                        contentType: 'image/*',
+                        upsert: true
                     });
 
                 if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
                 const { data: { publicUrl } } = adminClient.storage
-                    .from('products')
+                    .from(bucket)
                     .getPublicUrl(fileName);
 
                 return NextResponse.json({ success: true, url: publicUrl });
