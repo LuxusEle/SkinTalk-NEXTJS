@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsers, faShoppingBag, faDollarSign, faBox, faChartLine, faSignOutAlt, faPlus, faTrash, faImage, faCreditCard, faBars, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faUsers, faShoppingBag, faDollarSign, faBox, faChartLine, faSignOutAlt, faPlus, faTrash, faImage, faCreditCard, faBars, faTimes, faMinus } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { getSupabase, isAdminEmail, getAdminClient } from '@/lib/supabase';
 import { readQRFromFile } from '@/lib/qr';
@@ -116,7 +116,7 @@ export default function AdminPage() {
     const [newProductName, setNewProductName] = useState('');
     const [newProductPrice, setNewProductPrice] = useState('');
     const [newProductQuantity, setNewProductQuantity] = useState('');
-    const [newProductCategory, setNewProductCategory] = useState('General');
+    const [newProductCategory, setNewProductCategory] = useState('');
     const [newProductDescription, setNewProductDescription] = useState('');
     const [newProductBenefits, setNewProductBenefits] = useState('');
     const [newProductHowToUse, setNewProductHowToUse] = useState('');
@@ -137,6 +137,7 @@ export default function AdminPage() {
     const [showAddCategory, setShowAddCategory] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+    const [isAddProductExpanded, setIsAddProductExpanded] = useState(false);
     const [qrLoading, setQrLoading] = useState(false);
     const [qrError, setQrError] = useState('');
     const [qrResult, setQrResult] = useState<any>(null);
@@ -451,7 +452,7 @@ export default function AdminPage() {
         setNewProductName('');
         setNewProductPrice('');
         setNewProductQuantity('');
-        setNewProductCategory('General');
+        setNewProductCategory('');
         setNewProductDescription('');
         setNewProductBenefits('');
         setNewProductHowToUse('');
@@ -474,7 +475,7 @@ export default function AdminPage() {
         setNewProductName(product.name);
         setNewProductPrice(product.price.toString());
         setNewProductQuantity(product.quantity?.toString() || '0');
-        setNewProductCategory(product.category || 'General');
+        setNewProductCategory(product.category || '');
         setNewProductDescription(product.description || '');
         setNewProductBenefits(product.benefits || '');
         setNewProductHowToUse(product.how_to_use || '');
@@ -489,6 +490,7 @@ export default function AdminPage() {
         setNewProductImage(null);
         setNewProductImageName('');
         setIsCategoryDropdownOpen(false);
+        setIsAddProductExpanded(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
@@ -693,13 +695,24 @@ export default function AdminPage() {
                         <h1>Product Management</h1>
                         
                         <div className="admin-card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3><FontAwesomeIcon icon={faPlus} /> {editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-                                <button className="admin-btn secondary" onClick={generateSEOData} style={{ background: '#f0f0f0', border: '1px solid #ddd', color: '#555' }}>
-                                    ✨ Auto-generate SEO
+                            <div 
+                                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isAddProductExpanded ? '1.5rem' : '0', cursor: 'pointer' }}
+                                onClick={() => setIsAddProductExpanded(!isAddProductExpanded)}
+                            >
+                                <h3 style={{ margin: 0 }}><FontAwesomeIcon icon={isAddProductExpanded ? faMinus : faPlus} /> {editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+                                <button className="admin-btn secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
+                                    {isAddProductExpanded ? 'Hide Form' : 'Show Form'}
                                 </button>
                             </div>
-                            <div className="admin-form-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
+
+                            {isAddProductExpanded && (
+                                <motion.div 
+                                    initial={{ height: 0, opacity: 0 }} 
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    transition={{ duration: 0.3 }}
+                                    style={{ overflow: 'hidden' }}
+                                >
+                                    <div className="admin-form-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
                                 <input type="text" placeholder="Product Name" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} />
                                 <input type="text" placeholder="Item Code" value={newProductItemCode} onChange={(e) => setNewProductItemCode(e.target.value)} />
                                 <input type="number" placeholder="Price" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
@@ -712,8 +725,9 @@ export default function AdminPage() {
                                             <div 
                                                 className={`admin-form-custom-select-trigger ${isCategoryDropdownOpen ? 'open' : ''}`}
                                                 onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                                                style={{ color: newProductCategory ? 'inherit' : '#ccc' }}
                                             >
-                                                {newProductCategory}
+                                                {newProductCategory || 'Select'}
                                             </div>
                                             {isCategoryDropdownOpen && (
                                                 <div className="custom-select-dropdown">
@@ -750,63 +764,99 @@ export default function AdminPage() {
                                     </label>
                                     <input type="file" accept="image/*" onChange={(e) => { setNewProductImage(e.target.files?.[0] || null); setNewProductImageName(e.target.files?.[0]?.name || ''); }} />
                                 </div>
-                                <div style={{ gridColumn: 'span 6', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <input type="text" placeholder="URL Slug (e.g. herbal-face-wash)" value={newProductSlug} onChange={(e) => setNewProductSlug(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
-                                    <input type="text" placeholder="SKU (Stock Keeping Unit)" value={newProductSKU} onChange={(e) => setNewProductSKU(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
-                                </div>
-                                <input 
-                                    type="text" 
-                                    placeholder="Short Benefit (e.g. Clears acne)" 
-                                    value={newProductShortBenefit} 
-                                    onChange={(e) => setNewProductShortBenefit(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.95rem', width: '100%' }}
-                                />
-                                <div style={{ gridColumn: 'span 6', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                    <input type="text" placeholder="Meta Title" value={newProductMetaTitle} onChange={(e) => setNewProductMetaTitle(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
-                                    <input type="text" placeholder="Image Alt Text" value={newProductImageAlt} onChange={(e) => setNewProductImageAlt(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
-                                </div>
-                                <textarea 
-                                    placeholder="Meta Description" 
-                                    value={newProductMetaDescription} 
-                                    onChange={(e) => setNewProductMetaDescription(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '60px', width: '100%' }}
-                                />
                                 <textarea 
                                     placeholder="Product Description" 
                                     value={newProductDescription} 
                                     onChange={(e) => setNewProductDescription(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%' }}
+                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
+                                />
+                                <textarea 
+                                    placeholder="Short Benefit (e.g. Clears acne)" 
+                                    value={newProductShortBenefit} 
+                                    onChange={(e) => setNewProductShortBenefit(e.target.value)}
+                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '60px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
                                 />
                                 <textarea 
                                     placeholder="Key Benefits (List them...)" 
                                     value={newProductBenefits} 
                                     onChange={(e) => setNewProductBenefits(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%' }}
+                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
                                 />
                                 <textarea 
                                     placeholder="How to Use (Step 1, Step 2...)" 
                                     value={newProductHowToUse} 
                                     onChange={(e) => setNewProductHowToUse(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%' }}
+                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
                                 />
                                 <textarea 
                                     placeholder="Ingredients" 
                                     value={newProductIngredients} 
                                     onChange={(e) => setNewProductIngredients(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%' }}
+                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
                                 />
+                                
+                                <div style={{ gridColumn: 'span 6', marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <h4 style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>SEO & WEB METADATA</h4>
+                                        <button 
+                                            type="button"
+                                            className="admin-btn secondary" 
+                                            onClick={generateSEOData} 
+                                            style={{ 
+                                                padding: '0.4rem 0.8rem', 
+                                                fontSize: '0.85rem', 
+                                                background: '#f8f9fa', 
+                                                border: '1px solid #ddd', 
+                                                color: '#555',
+                                                borderRadius: '6px'
+                                            }}
+                                        >
+                                            ✨ Auto-generate SEO
+                                        </button>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem' }}>
+                                        <div style={{ gridColumn: 'span 3' }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Search Engine Friendly URL (Slug)</label>
+                                            <input type="text" placeholder="e.g. herbal-face-wash" value={newProductSlug} onChange={(e) => setNewProductSlug(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                        </div>
+                                        <div style={{ gridColumn: 'span 3' }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Product SKU</label>
+                                            <input type="text" placeholder="SKU001" value={newProductSKU} onChange={(e) => setNewProductSKU(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                        </div>
+                                        <div style={{ gridColumn: 'span 3' }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Meta Title</label>
+                                            <input type="text" placeholder="Google search title" value={newProductMetaTitle} onChange={(e) => setNewProductMetaTitle(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                        </div>
+                                        <div style={{ gridColumn: 'span 3' }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Image Accessibility Text (Alt)</label>
+                                            <input type="text" placeholder="Description for screen readers" value={newProductImageAlt} onChange={(e) => setNewProductImageAlt(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                        </div>
+                                        <div style={{ gridColumn: 'span 6' }}>
+                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Meta Description</label>
+                                            <textarea 
+                                                placeholder="Brief summary for search results" 
+                                                value={newProductMetaDescription} 
+                                                onChange={(e) => setNewProductMetaDescription(e.target.value)}
+                                                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '60px', fontFamily: 'inherit', fontSize: '0.95rem' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                <button className="admin-btn primary" onClick={handleSaveProduct} disabled={uploading}>
-                                    {uploading ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
-                                </button>
-                                {editingProduct && (
-                                    <button className="admin-btn" onClick={resetForm} style={{ background: '#ddd' }}>
-                                        Cancel
+
+                                <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #eee' }}>
+                                    <button className="admin-btn primary" onClick={handleSaveProduct} disabled={uploading}>
+                                        {uploading ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
                                     </button>
-                                )}
-                            </div>
-                        </div>
+                                    {editingProduct && (
+                                        <button className="admin-btn" onClick={resetForm} style={{ background: '#ddd' }}>
+                                            Cancel
+                                        </button>
+                                    )}
+                                </div>
+                            </motion.div>
+                        )}
+                    </div>
 
                         <h2 style={{ marginTop: '2rem' }}>All Products</h2>
                         <div className="admin-table-container">

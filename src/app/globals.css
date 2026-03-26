@@ -1465,7 +1465,15 @@ h1, h2, h3, h4 {
 }
 
 .form-group input::placeholder {
-    color: #aaa;
+    color: #ccc;
+}
+
+.admin-card input::placeholder,
+.admin-card textarea::placeholder,
+.admin-modal input::placeholder,
+.admin-modal textarea::placeholder {
+    color: #bab5b5;
+    opacity: 1;
 }
 
 .form-group input:focus {
