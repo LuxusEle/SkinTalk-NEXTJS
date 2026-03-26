@@ -473,7 +473,6 @@ export default function Home() {
                         <div className="footer-logo"><span className="logo-text">SkinTalk</span><span className="logo-tagline">Clean Beauty Ethics</span></div>
                         <p style={{ color: '#777', fontSize: '0.95rem', maxWidth: 350 }}>Redefining the standard of clean beauty with products that deliver visible results without compromise.</p>
                     </div>
-                    <div className="footer-col"><h4>Concerns</h4><ul><li><a href="#">Anti-Aging</a></li><li><a href="#">Brightening</a></li><li><a href="#">Hydration</a></li><li><a href="#">Acne-Prone</a></li></ul></div>
                     <div className="footer-col">
                         <h4>About</h4>
                         <ul>
@@ -491,7 +490,7 @@ export default function Home() {
                         </ul>
                     </div>
                 </div>
-                <div className="container footer-bottom">&copy; 2026 SkinTalk Cosmetics. Artfully Crafted.</div>
+                <div className="container footer-bottom">&copy; 2026 SkinTalk Cosmetics. All rights reserved. | Website by B2U APPS</div>
             </footer>
 
             <div className={`sidebar-overlay ${cartOpen || authModalOpen ? 'active' : ''}`} onClick={() => { setCartOpen(false); setAuthModalOpen(false); }}></div>
