@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { library } from '@fortawesome/fontawesome-svg-core';
+import { library, config } from '@fortawesome/fontawesome-svg-core';
+import '@fortawesome/fontawesome-svg-core/styles.css';
 import { faSearch, faShoppingBag, faTimes, faMagic, faBars } from '@fortawesome/free-solid-svg-icons';
+
+// Prevent Font Awesome from adding its own CSS since we are importing it above
+config.autoAddCss = false;
 
 library.add(faSearch, faShoppingBag, faTimes, faMagic, faBars);
 
