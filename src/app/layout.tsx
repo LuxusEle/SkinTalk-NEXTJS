@@ -7,21 +7,21 @@ import { faSearch, faShoppingBag, faTimes, faMagic, faBars } from '@fortawesome/
 library.add(faSearch, faShoppingBag, faTimes, faMagic, faBars);
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://skintalk.com'),
+  metadataBase: new URL('https://skintalk.lk'),
   title: {
-    default: "SkinTalk | Premium Clean Skincare",
+    default: "SkinTalk | Premium Clean Skincare Sri Lanka",
     template: "%s | SkinTalk",
   },
-  description: "Experience the perfect blend of minimalist design and pure ingredients. Discover your glow with SkinTalk's premium clean beauty products.",
-  keywords: ["skincare", "clean beauty", "organic skincare", "premium skincare", "face serums", "moisturizers", "cleansers"],
+  description: "Experience the perfect blend of minimalist design and pure ingredients. Discover your glow with SkinTalk's premium clean beauty products in Sri Lanka.",
+  keywords: ["skincare", "clean beauty", "organic skincare", "premium skincare", "face serums", "moisturizers", "cleansers", "Sri Lanka"],
   authors: [{ name: "SkinTalk" }],
   creator: "SkinTalk",
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://skintalk.com",
+    url: "https://skintalk.lk",
     siteName: "SkinTalk",
-    title: "SkinTalk | Premium Clean Skincare",
+    title: "SkinTalk | Premium Clean Skincare Sri Lanka",
     description: "Experience the perfect blend of minimalist design and pure ingredients. Discover your glow with SkinTalk.",
     images: [
       {
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "SkinTalk | Premium Clean Skincare",
+    title: "SkinTalk | Premium Clean Skincare Sri Lanka",
     description: "Experience the perfect blend of minimalist design and pure ingredients.",
     images: ["/og-image.jpg"],
   },
@@ -54,8 +54,8 @@ export default function RootLayout({
     "@type": "Organization",
     "name": "SkinTalk",
     "description": "Premium Clean Skincare - Experience the perfect blend of minimalist design and pure ingredients.",
-    "url": "https://skintalk.com",
-    "logo": "https://skintalk.com/logo.png",
+    "url": "https://skintalk.lk",
+    "logo": "https://skintalk.lk/logo.png",
     "sameAs": [
       "https://instagram.com/skintalk",
       "https://facebook.com/skintalk"

@@ -9,19 +9,24 @@ let supabaseClient: SupabaseClient | null = null;
 let adminClient: SupabaseClient | null = null;
 
 export const getSupabase = (): SupabaseClient => {
-    if (!supabaseClient && typeof window !== 'undefined') {
-        supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
-    }
-    
     if (!supabaseClient) {
-        throw new Error('Supabase client not initialized');
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        
+        if (!url || !key) {
+            console.error('Supabase credentials missing in process.env');
+            // Fallback to module-level vars if present
+            supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+        } else {
+            supabaseClient = createClient(url, key);
+        }
     }
     
     return supabaseClient;
 };
 
 export const getAdminClient = (): SupabaseClient | null => {
-    if (!adminClient && typeof window !== 'undefined' && serviceRoleKey) {
+    if (!adminClient && serviceRoleKey) {
         adminClient = createClient(supabaseUrl, serviceRoleKey, {
             auth: { autoRefreshToken: false, persistSession: false }
         });

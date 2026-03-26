@@ -14,6 +14,7 @@ interface Product {
     image: string;
     category: string;
     quantity: number;
+    slug?: string;
 }
 
 interface CartItem {
@@ -400,7 +401,7 @@ export default function Home() {
                                             src={product.image} 
                                             alt={product.name} 
                                             className="product-img" 
-                                            onClick={() => router.push(`/products/${product.id}`)}
+                                            onClick={() => router.push(`/products/${product.slug || product.id}`)}
                                             style={{ cursor: 'pointer' }}
                                         />
                                         {(!product.quantity || product.quantity <= 0) ? (
@@ -409,7 +410,7 @@ export default function Home() {
                                             <motion.button className="quick-add" onClick={() => addToCart(product)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Add to Bag</motion.button>
                                         )}
                                     </div>
-                                    <div className="product-info" onClick={() => router.push(`/products/${product.id}`)} style={{ cursor: 'pointer' }}>
+                                    <div className="product-info" onClick={() => router.push(`/products/${product.slug || product.id}`)} style={{ cursor: 'pointer' }}>
                                         <h3>{product.name}</h3>
                                         <p className="product-price">LKR {product.price.toFixed(2)}</p>
                                     </div>
@@ -483,7 +484,7 @@ export default function Home() {
                                                     src={product.image} 
                                                     alt={product.name} 
                                                     className="product-img" 
-                                                    onClick={() => { router.push(`/products/${product.id}`); setShowSearch(false); }}
+                                                    onClick={() => { router.push(`/products/${product.slug || product.id}`); setShowSearch(false); }}
                                                     style={{ cursor: 'pointer' }}
                                                 />
                                                 {(!product.quantity || product.quantity <= 0) ? (
@@ -492,7 +493,7 @@ export default function Home() {
                                                     <button className="quick-add" onClick={() => { addToCart(product); setShowSearch(false); setSearchQuery(''); }}>Add to Bag</button>
                                                 )}
                                             </div>
-                                            <div className="product-info" onClick={() => { router.push(`/products/${product.id}`); setShowSearch(false); }} style={{ cursor: 'pointer' }}>
+                                            <div className="product-info" onClick={() => { router.push(`/products/${product.slug || product.id}`); setShowSearch(false); }} style={{ cursor: 'pointer' }}>
                                                 <h3>{product.name}</h3>
                                                 <p className="product-price">LKR {product.price.toFixed(2)}</p>
                                             </div>

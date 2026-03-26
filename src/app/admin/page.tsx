@@ -73,6 +73,11 @@ interface Product {
     ingredients?: string;
     short_benefit?: string;
     item_code?: string;
+    meta_title?: string;
+    meta_description?: string;
+    slug?: string;
+    image_alt?: string;
+    sku?: string;
     created_at: string;
 }
 
@@ -118,6 +123,11 @@ export default function AdminPage() {
     const [newProductIngredients, setNewProductIngredients] = useState('');
     const [newProductShortBenefit, setNewProductShortBenefit] = useState('');
     const [newProductItemCode, setNewProductItemCode] = useState('');
+    const [newProductMetaTitle, setNewProductMetaTitle] = useState('');
+    const [newProductMetaDescription, setNewProductMetaDescription] = useState('');
+    const [newProductSlug, setNewProductSlug] = useState('');
+    const [newProductImageAlt, setNewProductImageAlt] = useState('');
+    const [newProductSKU, setNewProductSKU] = useState('');
     const [newProductImage, setNewProductImage] = useState<File | null>(null);
     const [newProductImageName, setNewProductImageName] = useState('');
     const [uploading, setUploading] = useState(false);
@@ -330,7 +340,12 @@ export default function AdminPage() {
                 how_to_use: newProductHowToUse,
                 ingredients: newProductIngredients,
                 short_benefit: newProductShortBenefit,
-                item_code: newProductItemCode
+                item_code: newProductItemCode,
+                meta_title: newProductMetaTitle,
+                meta_description: newProductMetaDescription,
+                slug: newProductSlug,
+                image_alt: newProductImageAlt,
+                sku: newProductSKU
             };
             if (editingProduct) {
                 data.id = editingProduct.id;
@@ -398,6 +413,11 @@ export default function AdminPage() {
         setNewProductIngredients('');
         setNewProductShortBenefit('');
         setNewProductItemCode('');
+        setNewProductMetaTitle('');
+        setNewProductMetaDescription('');
+        setNewProductSlug('');
+        setNewProductImageAlt('');
+        setNewProductSKU('');
         setNewProductImage(null);
         setNewProductImageName('');
         setEditingProduct(null);
@@ -416,6 +436,11 @@ export default function AdminPage() {
         setNewProductIngredients(product.ingredients || '');
         setNewProductShortBenefit(product.short_benefit || '');
         setNewProductItemCode(product.item_code || '');
+        setNewProductMetaTitle(product.meta_title || '');
+        setNewProductMetaDescription(product.meta_description || '');
+        setNewProductSlug(product.slug || '');
+        setNewProductImageAlt(product.image_alt || '');
+        setNewProductSKU(product.sku || '');
         setNewProductImage(null);
         setNewProductImageName('');
         setIsCategoryDropdownOpen(false);
@@ -442,6 +467,51 @@ export default function AdminPage() {
         } else {
             loadData();
             alert('Product deleted!');
+        }
+    };
+
+    const generateSEOData = () => {
+        if (!newProductName) {
+            alert('Please enter a product name first.');
+            return;
+        }
+
+        const slugify = (text: string) => {
+            return text
+                .toString()
+                .toLowerCase()
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^\w-]+/g, '')
+                .replace(/--+/g, '-');
+        };
+
+        const cleanedName = newProductName.replace(/Skintalks\s*/gi, '').trim();
+        const ingredients = newProductIngredients ? newProductIngredients.split(/[,|\n]/)[0].trim() : '';
+        const benefit = newProductShortBenefit || '';
+
+        // Meta Title: {Name} {ShortBenefit} in Sri Lanka | Skintalks
+        const metaTitle = `${newProductName} ${benefit ? benefit + ' ' : ''}in Sri Lanka | Skintalks`;
+        setNewProductMetaTitle(metaTitle);
+
+        // Meta Description: Shop Skintalks {Name} in Sri Lanka for {KeyBenefit/Summary}. {Short Benefit}. Only LKR {Price}.
+        const descriptionExcerpt = newProductDescription ? newProductDescription.split('.')[0] : 'natural beauty';
+        const metaDesc = `Shop Skintalks ${newProductName} in Sri Lanka for ${descriptionExcerpt}. ${benefit}. Only LKR ${newProductPrice}.`;
+        setNewProductMetaDescription(metaDesc);
+
+        // Slug: {slugify(Name)}-sri-lanka
+        const slug = `${slugify(newProductName)}-sri-lanka`;
+        setNewProductSlug(slug.replace(/^\//, '')); // Ensure no leading slash
+
+        // Image Alt: Skintalks {Name} for {Benefit} Sri Lanka
+        const alt = `Skintalks ${newProductName} for ${benefit || 'Radiant Skin'} Sri Lanka`;
+        setNewProductImageAlt(alt);
+
+        // SKU: Initials of name + random 3-digit suffix
+        if (!newProductSKU) {
+            const initials = cleanedName.split(' ').map(w => w[0]).join('').toUpperCase();
+            const suffix = Math.floor(100 + Math.random() * 900);
+            setNewProductSKU(`${initials}${suffix}`);
         }
     };
 
@@ -578,7 +648,12 @@ export default function AdminPage() {
                         <h1>Product Management</h1>
                         
                         <div className="admin-card">
-                            <h3><FontAwesomeIcon icon={faPlus} /> {editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <h3><FontAwesomeIcon icon={faPlus} /> {editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
+                                <button className="admin-btn secondary" onClick={generateSEOData} style={{ background: '#f0f0f0', border: '1px solid #ddd', color: '#555' }}>
+                                    ✨ Auto-generate SEO
+                                </button>
+                            </div>
                             <div className="admin-form-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
                                 <input type="text" placeholder="Product Name" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} />
                                 <input type="text" placeholder="Item Code" value={newProductItemCode} onChange={(e) => setNewProductItemCode(e.target.value)} />
@@ -642,12 +717,26 @@ export default function AdminPage() {
                                     </label>
                                     <input type="file" accept="image/*" onChange={(e) => { setNewProductImage(e.target.files?.[0] || null); setNewProductImageName(e.target.files?.[0]?.name || ''); }} />
                                 </div>
+                                <div style={{ gridColumn: 'span 6', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <input type="text" placeholder="URL Slug (e.g. herbal-face-wash)" value={newProductSlug} onChange={(e) => setNewProductSlug(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                    <input type="text" placeholder="SKU (Stock Keeping Unit)" value={newProductSKU} onChange={(e) => setNewProductSKU(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                </div>
                                 <input 
                                     type="text" 
                                     placeholder="Short Benefit (e.g. Clears acne)" 
                                     value={newProductShortBenefit} 
                                     onChange={(e) => setNewProductShortBenefit(e.target.value)}
                                     style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', fontSize: '0.95rem', width: '100%' }}
+                                />
+                                <div style={{ gridColumn: 'span 6', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                    <input type="text" placeholder="Meta Title" value={newProductMetaTitle} onChange={(e) => setNewProductMetaTitle(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                    <input type="text" placeholder="Image Alt Text" value={newProductImageAlt} onChange={(e) => setNewProductImageAlt(e.target.value)} style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                </div>
+                                <textarea 
+                                    placeholder="Meta Description" 
+                                    value={newProductMetaDescription} 
+                                    onChange={(e) => setNewProductMetaDescription(e.target.value)}
+                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '60px', width: '100%' }}
                                 />
                                 <textarea 
                                     placeholder="Product Description" 
