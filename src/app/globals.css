@@ -150,26 +150,44 @@ h1, h2, h3, h4 {
 
 .header-search {
     width: 100%;
-    max-width: 320px;
+    max-width: 250px; /* Slimmer base for more elegant look */
     position: relative;
+    transition: max-width 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.header-search:focus-within {
+    max-width: 320px; /* Subtle expansion on focus */
 }
 
 .header-search input {
     width: 100%;
-    padding: 8px 18px;
-    padding-right: 40px;
-    border: 1px solid #ccc;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    background: #f5f5f5;
+    padding: 10px 20px;
+    padding-right: 42px;
+    border: 1px solid rgba(0, 0, 0, 0.08); /* Minimal border */
+    border-radius: 50px;
+    font-size: 0.82rem;
+    background: rgba(255, 255, 255, 0.5); /* Glassmorphism base */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     outline: none;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em; /* Premium spacing */
     font-family: var(--font-sans);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.header-search input:focus {
+    background: #ffffff;
+    border-color: var(--brand-green);
+    box-shadow: 0 8px 25px rgba(0, 66, 54, 0.1); /* Branded glow */
 }
 
 .header-search input::placeholder {
     text-align: left;
-    color: #888;
+    color: #999;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
 }
 
 .header-search .search-icon {
@@ -177,9 +195,14 @@ h1, h2, h3, h4 {
     right: 18px;
     top: 50%;
     transform: translateY(-50%);
-    color: #333;
+    color: #666;
     pointer-events: none;
-    font-size: 1.1rem;
+    font-size: 1rem;
+    transition: color 0.3s ease;
+}
+
+.header-search:focus-within .search-icon {
+    color: var(--brand-green);
 }
 
 .logo-container {
