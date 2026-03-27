@@ -274,11 +274,35 @@ function ProductsPageContent() {
                                                     {(!product.quantity || product.quantity <= 0) && (
                                                         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', fontSize: '0.85rem', zIndex: 1 }}>Out of Stock</div>
                                                     )}
+                                                    {(product.quantity && product.quantity > 0 && product.quantity < 10) && (
+                                                        <div style={{
+                                                            position: 'absolute',
+                                                            top: '20px',
+                                                            left: '-42px',
+                                                            background: '#d9534f',
+                                                            color: 'white',
+                                                            width: '160px',
+                                                            textAlign: 'center',
+                                                            fontSize: '0.75rem',
+                                                            fontWeight: 'bold',
+                                                            transform: 'rotate(-45deg)',
+                                                            boxShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                                                            zIndex: 10,
+                                                            whiteSpace: 'nowrap',
+                                                            pointerEvents: 'none',
+                                                            lineHeight: '1.6',
+                                                            textTransform: 'uppercase'
+                                                        }}>
+                                                            ONLY {product.quantity} LEFT
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="product-info" style={{ cursor: 'pointer' }}>
+                                                <div className="product-info" style={{ cursor: 'pointer', textAlign: 'center' }}>
                                                     <div onClick={() => router.push(`/products/${product.slug || product.id}`)}>
-                                                        <h3>{product.name}</h3>
-                                                        <p className="product-price">LKR {product.price.toFixed(2)}</p>
+                                                        <h3 style={{ margin: '0 auto 0.5rem' }}>{product.name}</h3>
+                                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                                            <p className="product-price">LKR {product.price.toFixed(2)}</p>
+                                                        </div>
                                                     </div>
                                                     {(product.quantity && product.quantity > 0) && (
                                                         <motion.button className="quick-add" onClick={() => addToCart(product)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Add to Cart</motion.button>
