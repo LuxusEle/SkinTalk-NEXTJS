@@ -6,25 +6,32 @@ import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faShoppingBag, faBars, faUser, faSearch, faSignOutAlt } from '@fortawesome/free-solid-svg-icons';
 import { getSupabase, isAdminEmail } from '@/lib/supabase';
+import Header from '@/components/Header';
+
+interface Category {
+    id: string;
+    name: string;
+}
 
 export default function TermsPage() {
     const router = useRouter();
-    const [scrolled, setScrolled] = useState(false);
     const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [categories, setCategories] = useState<Category[]>([]);
 
     useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 50);
-        window.addEventListener('scroll', handleScroll);
-        
         const supabase = getSupabase();
         supabase.auth.getUser().then(({ data: { user } }) => {
             setUser(user);
             setIsAdmin(isAdminEmail(user?.email));
         });
 
-        return () => window.removeEventListener('scroll', handleScroll);
+        const loadCategories = async () => {
+            const { data } = await supabase.from('product_categories').select('*').order('name');
+            if (data) setCategories(data);
+        };
+        loadCategories();
     }, []);
 
     const handleLogout = async () => {
@@ -50,27 +57,15 @@ export default function TermsPage() {
 
     return (
         <div style={{ background: '#fffcfd', minHeight: '100vh' }}>
-            <motion.header className={`header ${scrolled ? 'scrolled' : ''}`} initial={{ y: -100 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
-                <div className="container nav-content">
-                    <div className="logo" onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>
-                        <img src="/logo.png" alt="SkinTalk" style={{ height: 90, objectFit: 'contain' }} />
-                    </div>
-                    <nav className="nav-links">
-                        <a onClick={() => router.push('/')} className="nav-link" style={{ cursor: 'pointer' }}>Home</a>
-                        <a onClick={() => router.push('/products')} className="nav-link" style={{ cursor: 'pointer' }}>Shop</a>
-                        <a onClick={() => router.push('/#collections')} className="nav-link" style={{ cursor: 'pointer' }}>Collections</a>
-                    </nav>
-                    <div className="nav-actions">
-                        {user ? (
-                            <button className="icon-btn" onClick={handleLogout} title="Logout"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-                        ) : (
-                            <button className="icon-btn" onClick={() => router.push('/#login')} title="Login"><FontAwesomeIcon icon={faUser} /></button>
-                        )}
-                        <button className="icon-btn" onClick={() => router.push('/products')}><FontAwesomeIcon icon={faShoppingBag} /></button>
-                        <button className="icon-btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}><FontAwesomeIcon icon={faBars} /></button>
-                    </div>
-                </div>
-            </motion.header>
+            <Header 
+                user={user}
+                cartCount={0}
+                onLogout={handleLogout}
+                onLoginClick={() => router.push('/#login')}
+                onCartClick={() => router.push('/products')}
+                onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+                categories={categories}
+            />
 
             <main style={{ paddingTop: '140px', paddingBottom: '100px' }}>
                 <div className="container terms-grid">

@@ -6,6 +6,7 @@ import { faSearch, faShoppingBag, faTimes, faBars, faMagic, faUser, faSignOutAlt
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { getSupabase, isAdminEmail, getAdminClient } from '@/lib/supabase';
+import Header from '@/components/Header';
 
 interface Product {
     id: string;
@@ -29,7 +30,7 @@ interface CartItem {
 
 function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
     const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, margin: "-100px" });
+    const isInView = useInView(ref, { once: true, margin: "0px" });
     return (
         <motion.div ref={ref} className={className} initial={{ opacity: 0, y: 40 }} animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }} transition={{ duration: 0.8, delay, ease: [0.25, 0.25, 0.25, 0.75] }}>
             {children}
@@ -50,7 +51,6 @@ function ParallaxImage({ src, alt, className = '' }: { src: string; alt: string;
 
 export default function Home() {
     const router = useRouter();
-    const [scrolled, setScrolled] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const [cart, setCart] = useState<any[]>([]);
     const [theme, setTheme] = useState('elegant');
@@ -77,11 +77,6 @@ export default function Home() {
     const [uploading, setUploading] = useState(false);
     const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 100);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     useEffect(() => {
         const supabase = getSupabase();
@@ -326,71 +321,15 @@ export default function Home() {
 
     return (
         <>
-            <motion.header className={`header ${scrolled ? 'scrolled' : ''}`} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-                <div className="announcement-bar">
-                    <span className="arrow arrow-left"><FontAwesomeIcon icon={faChevronLeft} /></span>
-                    <p>Free delivery on orders over LKR 5000</p>
-                    <span className="arrow arrow-right"><FontAwesomeIcon icon={faChevronRight} /></span>
-                </div>
-                
-                <div className="main-header">
-                    <div className="header-search">
-                        <input 
-                            type="text" 
-                            placeholder="SEARCH" 
-                            value={searchQuery} 
-                            onChange={(e) => setSearchQuery(e.target.value)} 
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()} 
-                        />
-                        <FontAwesomeIcon icon={faSearch} className="search-icon" />
-                    </div>
-
-                    <div className="logo-container" onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>
-                        <img src="/logo.png" alt="SkinTalk" className="logo-img" />
-                    </div>
-
-                    <div className="header-actions">
-                        <button className="header-action-btn" title="Location">
-                            <FontAwesomeIcon icon={faMapMarkerAlt} />
-                        </button>
-                        {user ? (
-                            <button className="header-action-btn" onClick={handleLogout} title="Logout">
-                                <FontAwesomeIcon icon={faSignOutAlt} />
-                            </button>
-                        ) : (
-                            <button className="header-action-btn" onClick={() => setAuthModalOpen(true)} title="Login">
-                                <FontAwesomeIcon icon={faUser} />
-                            </button>
-                        )}
-                        <button className="header-action-btn cart-trigger" onClick={() => setCartOpen(true)} style={{ position: 'relative' }}>
-                            <FontAwesomeIcon icon={faShoppingBag} />
-                            {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
-                        </button>
-                        <button className="header-action-btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-                            <FontAwesomeIcon icon={faBars} />
-                        </button>
-                    </div>
-                </div>
-
-                <div className="sub-header">
-                    <nav className="cat-nav">
-                        <ul className="cat-nav-links">
-                            <li><a href="#home" className="cat-nav-link">Home</a></li>
-                            {categories.map((cat) => (
-                                <li key={cat.id}>
-                                    <a 
-                                        href={`/products?category=${cat.name}`} 
-                                        className="cat-nav-link"
-                                    >
-                                        {cat.name}
-                                    </a>
-                                </li>
-                            ))}
-                            <li><a href="/about" className="cat-nav-link">About Us</a></li>
-                        </ul>
-                    </nav>
-                </div>
-            </motion.header>
+            <Header 
+                user={user}
+                cartCount={cart.length}
+                onLogout={handleLogout}
+                onLoginClick={() => setAuthModalOpen(true)}
+                onCartClick={() => setCartOpen(true)}
+                onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+                categories={categories}
+            />
 
             <div className={`mobile-menu ${mobileMenuOpen ? 'active' : ''}`}>
                 <nav className="mobile-nav">

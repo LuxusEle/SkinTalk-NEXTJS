@@ -7,6 +7,12 @@ import { motion, useInView } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { getSupabase, isAdminEmail } from '@/lib/supabase';
+import Header from '@/components/Header';
+
+interface Category {
+    id: string;
+    name: string;
+}
 
 interface Product {
     id: string;
@@ -24,7 +30,7 @@ interface CartItem {
 
 function FadeIn({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
     const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, margin: "-100px" });
+    const isInView = useInView(ref, { once: true, margin: "0px" });
     return (
         <motion.div ref={ref} className={className} initial={{ opacity: 0, y: 40 }} animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }} transition={{ duration: 0.8, delay, ease: [0.25, 0.25, 0.25, 0.75] }}>
             {children}
@@ -42,7 +48,6 @@ export default function ProductsPage() {
 
 function ProductsPageContent() {
     const router = useRouter();
-    const [scrolled, setScrolled] = useState(false);
     const [cartOpen, setCartOpen] = useState(false);
     const [cart, setCart] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -60,6 +65,7 @@ function ProductsPageContent() {
     const [authError, setAuthError] = useState('');
     const [isAdmin, setIsAdmin] = useState(false);
     const [products, setProducts] = useState<Product[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const searchParams = useSearchParams();
     const categoryParam = searchParams.get('category');
 
@@ -77,11 +83,6 @@ function ProductsPageContent() {
         }
     }, [categoryParam, products]);
 
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 50);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
 
     useEffect(() => {
         const supabase = getSupabase();
@@ -166,8 +167,15 @@ function ProductsPageContent() {
         if (data) setProducts(data);
     };
 
+    const loadCategories = async () => {
+        const supabase = getSupabase();
+        const { data } = await supabase.from('product_categories').select('*').order('name');
+        if (data) setCategories(data);
+    };
+
     useEffect(() => {
         loadProducts();
+        loadCategories();
     }, []);
 
     const addToCart = (product: Product) => {
@@ -206,35 +214,16 @@ function ProductsPageContent() {
     }, {} as Record<string, Product[]>);
 
     return (
-        <div style={{ paddingTop: 'var(--header-height)' }}>
-            <motion.header className={`header ${scrolled ? 'scrolled' : ''}`} initial={{ y: -100 }} animate={{ y: 0 }} transition={{ duration: 0.6 }}>
-                <div className="container nav-content">
-                    <div className="logo" onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>
-                        <img src="/logo.png" alt="SkinTalk" style={{ height: 90, objectFit: 'contain' }} />
-                    </div>
-                    <nav className="nav-links">
-                        <a onClick={() => router.push('/')} className="nav-link" style={{ cursor: 'pointer' }}>Home</a>
-                        <a onClick={() => router.push('/products')} className="nav-link active" style={{ cursor: 'pointer' }}>Shop</a>
-                        <a onClick={() => router.push('/#collections')} className="nav-link" style={{ cursor: 'pointer' }}>Collections</a>
-                    </nav>
-                    <div className="nav-actions">
-                        <div className="search-container">
-                            <input type="text" placeholder="Search products..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} className="search-input" />
-                            <button className="icon-btn" onClick={handleSearch}><FontAwesomeIcon icon={faSearch} /></button>
-                        </div>
-                        {user ? (
-                            <button className="icon-btn" onClick={handleLogout} title="Logout"><FontAwesomeIcon icon={faSignOutAlt} /></button>
-                        ) : (
-                            <button className="icon-btn" onClick={() => setAuthModalOpen(true)} title="Login"><FontAwesomeIcon icon={faUser} /></button>
-                        )}
-                        <button className="icon-btn cart-trigger" onClick={() => setCartOpen(true)}>
-                            <FontAwesomeIcon icon={faShoppingBag} />
-                            {cart.length > 0 && <span className="cart-badge">{cart.length}</span>}
-                        </button>
-                        <button className="icon-btn mobile-menu-trigger" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}><FontAwesomeIcon icon={faBars} /></button>
-                    </div>
-                </div>
-            </motion.header>
+        <div>
+            <Header 
+                user={user}
+                cartCount={cart.length}
+                onLogout={handleLogout}
+                onLoginClick={() => setAuthModalOpen(true)}
+                onCartClick={() => setCartOpen(true)}
+                onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
+                categories={categories}
+            />
 
             <div className={`mobile-menu ${mobileMenuOpen ? 'active' : ''}`}>
                 <nav className="mobile-nav">
