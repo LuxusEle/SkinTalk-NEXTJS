@@ -8,6 +8,7 @@ import { faArrowLeft, faShoppingBag, faBars, faUser, faSearch, faSignOutAlt, faL
 import { getSupabase, isAdminEmail } from '@/lib/supabase';
 import dynamic from 'next/dynamic';
 const Header = dynamic(() => import('@/components/Header'), { ssr: false });
+import Footer from '@/components/Footer';
 
 interface Category {
     id: string;
@@ -169,36 +170,7 @@ export default function AboutPage() {
                 </div>
             </main>
 
-            <footer className="footer">
-                <div className="container footer-grid">
-                    <div className="footer-brand">
-                        <div className="footer-logo"><span className="logo-text">SkinTalk</span><span className="logo-tagline">Clean Beauty Ethics</span></div>
-                        <p style={{ color: '#777', fontSize: '0.95rem', maxWidth: 350 }}>Redefining the standard of clean beauty with products that deliver visible results without compromise.</p>
-                    </div>
-                    <div className="footer-col">
-                        <h4>Explore</h4>
-                        <ul>
-                            <li><a onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>Home</a></li>
-                            <li><a onClick={() => router.push('/products')} style={{ cursor: 'pointer' }}>Shop</a></li>
-                            <li><a onClick={() => router.push('/about')} style={{ cursor: 'pointer' }}>Our Story</a></li>
-                        </ul>
-                    </div>
-                    <div className="footer-col">
-                        <h4>Support</h4>
-                        <ul>
-                            <li><a onClick={() => router.push('/terms')} style={{ cursor: 'pointer' }}>Terms & Conditions</a></li>
-                            <li><a href="mailto:sales@skintalks.lk">Email Us</a></li>
-                            <li><a href="https://wa.me/94767678984" target="_blank">WhatsApp Us</a></li>
-                        </ul>
-                    </div>
-                    <div className="footer-newsletter">
-                        <h4>Stay Radiant</h4>
-                        <p>Sign up for exclusive beauty tips and early access to drops.</p>
-                        <div className="newsletter-form"><input type="email" placeholder="Email Address" /><button className="hero-cta">Join</button></div>
-                    </div>
-                </div>
-                <div className="container footer-bottom">&copy; 2026 SkinTalk Cosmetics. Artfully Crafted.</div>
-            </footer>
+            <Footer />
         </div>
     );
 }
