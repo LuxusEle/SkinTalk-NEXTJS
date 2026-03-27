@@ -107,7 +107,48 @@ export default function ProductDetailClient({
         const avg = initialReviews.reduce((acc, r) => acc + r.rating, 0) / initialReviews.length;
         return Math.round(avg * 10) / 10;
     });
+    
+    // Social Proof State
+    const [buyersToday, setBuyersToday] = useState(0);
 
+    const loadSalesActivity = async () => {
+        try {
+            const supabase = getSupabase();
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Start of today in local time
+            
+            // First, get all orders since the start of the day in UTC 
+            // We use a more permissive date range to account for timezone differences
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const { data: orders, error } = await supabase
+                .from('orders')
+                .select('items, created_at')
+                .gte('created_at', yesterday.toISOString()); // Get last 24-48h to be safe, then filter in JS
+
+            if (error) {
+                console.error('Sales query error:', error);
+                return;
+            }
+
+            if (orders) {
+                // Filter specifically for "today" in the user's local day
+                const todayMs = today.getTime();
+                const matchingOrders = orders.filter(order => {
+                    const orderDate = new Date(order.created_at).getTime();
+                    if (orderDate < todayMs) return false;
+                    
+                    const items = order.items || [];
+                    return items.some((item: any) => item.product_id === productId);
+                });
+
+                setBuyersToday(matchingOrders.length);
+            }
+        } catch (err) {
+            console.error('Error loading sales activity:', err);
+        }
+    };
 
     useEffect(() => {
         sessionStorage.setItem('fromProducts', 'true');
@@ -124,6 +165,7 @@ export default function ProductDetailClient({
             if (session?.user) loadCartFromDb(session.user.id);
         });
         loadCategories();
+        loadSalesActivity(); // Load real sales data on mount
         return () => subscription.unsubscribe();
     }, []);
 
@@ -426,15 +468,34 @@ export default function ProductDetailClient({
                                     ) : (
                                         <>
                                             {/* Urgency Trigger */}
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                                                <motion.div 
-                                                    animate={{ opacity: [0.5, 1, 0.5] }} 
-                                                    transition={{ duration: 2, repeat: Infinity }}
-                                                    style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d9534f' }} 
-                                                />
-                                                <span style={{ fontSize: '0.85rem', color: '#d9534f', fontWeight: '600' }}>
-                                                    {product.quantity < 10 ? `Only ${product.quantity} left in stock - selling fast!` : 'Popular choice - selling fast! 🔥'}
-                                                </span>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                    <motion.div 
+                                                        animate={{ opacity: [0.5, 1, 0.5] }} 
+                                                        transition={{ duration: 2, repeat: Infinity }}
+                                                        style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d9534f' }} 
+                                                    />
+                                                    <span style={{ fontSize: '0.85rem', color: '#d9534f', fontWeight: '600' }}>
+                                                        {product.quantity < 10 ? `Only ${product.quantity} left in stock - selling fast!` : 'Popular choice - selling fast! 🔥'}
+                                                    </span>
+                                                </div>
+                                                
+                                                {/* Social Proof: Real-Time Activity from Database */}
+                                                {buyersToday > 0 && (
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0, 66, 54, 0.03)', padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid rgba(0, 66, 54, 0.05)' }}>
+                                                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }} />
+                                                            <motion.div 
+                                                                animate={{ scale: [1, 2.5], opacity: [0.5, 0] }} 
+                                                                transition={{ duration: 1.5, repeat: Infinity }}
+                                                                style={{ position: 'absolute', width: '8px', height: '8px', borderRadius: '50%', background: '#22c55e' }} 
+                                                            />
+                                                        </div>
+                                                        <span style={{ fontSize: '0.8rem', color: '#444' }}>
+                                                            <strong style={{ color: 'var(--brand-green)' }}>{buyersToday} people</strong> bought this today.
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             <motion.button 
