@@ -29,7 +29,7 @@ export default function AboutPage() {
         });
 
         const loadCategories = async () => {
-            const { data } = await supabase.from('product_categories').select('*').order('name');
+            const { data } = await supabase.from('categories').select('*').order('name');
             if (data) setCategories(data);
         };
         loadCategories();

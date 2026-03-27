@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faBars, faUser, faSignOutAlt, faChevronLeft, faChevronRight, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface Category {
     id: string;
@@ -58,9 +59,9 @@ export default function Header({ user, cartCount, onLogout, onLoginClick, onCart
                     <FontAwesomeIcon icon={faSearch} className="search-icon" />
                 </div>
 
-                <div className="logo-container" onClick={() => router.push('/')} style={{ cursor: 'pointer' }}>
+                <Link href="/" className="logo-container" style={{ cursor: 'pointer' }}>
                     <img src="/logo.png" alt="SkinTalk" className="logo-img" />
-                </div>
+                </Link>
 
                 <div className="header-actions">
                     {user ? (
@@ -85,19 +86,18 @@ export default function Header({ user, cartCount, onLogout, onLoginClick, onCart
             <div className="sub-header">
                 <nav className="cat-nav">
                     <ul className="cat-nav-links">
-                        <li><a onClick={() => router.push('/')} className="cat-nav-link" style={{ cursor: 'pointer' }}>Home</a></li>
+                        <li><Link href="/" className="cat-nav-link">Home</Link></li>
                         {categories.map((cat) => (
                             <li key={cat.id}>
-                                <a 
-                                    onClick={() => router.push(`/products?category=${cat.name}`)}
+                                <Link 
+                                    href={`/products?category=${encodeURIComponent(cat.name)}`}
                                     className="cat-nav-link"
-                                    style={{ cursor: 'pointer' }}
                                 >
                                     {cat.name}
-                                </a>
+                                </Link>
                             </li>
                         ))}
-                        <li><a onClick={() => router.push('/about')} className="cat-nav-link" style={{ cursor: 'pointer' }}>About Us</a></li>
+                        <li><Link href="/about" className="cat-nav-link">About Us</Link></li>
                     </ul>
                 </nav>
             </div>

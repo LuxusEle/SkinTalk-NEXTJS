@@ -9,6 +9,7 @@ import {
     faTiktok, 
     faYoutube 
 } from '@fortawesome/free-brands-svg-icons';
+import Link from 'next/link';
 
 interface Category {
     id: string;
@@ -55,7 +56,11 @@ const Footer = () => {
             <h4 className="footer-title">{title}</h4>
             <ul className="footer-links">
                 {links.map((link, index) => (
-                    <li key={index}><a href={link.href}>{link.label}</a></li>
+                    <li key={index}>
+                        <Link href={link.href}>
+                            {link.label}
+                        </Link>
+                    </li>
                 ))}
             </ul>
         </div>
@@ -162,9 +167,9 @@ const Footer = () => {
                                     <p>SINCE 2024</p>
                                 </div>
                                 <div className="centered-socials">
-                                    <a href="#"><FontAwesomeIcon icon={faInstagram} /></a>
-                                    <a href="#"><FontAwesomeIcon icon={faFacebook} /></a>
-                                    <a href="#"><FontAwesomeIcon icon={faTiktok} /></a>
+                                    <Link href="#"><FontAwesomeIcon icon={faInstagram} /></Link>
+                                    <Link href="#"><FontAwesomeIcon icon={faFacebook} /></Link>
+                                    <Link href="#"><FontAwesomeIcon icon={faTiktok} /></Link>
                                 </div>
                             </div>
                         </div>
@@ -179,8 +184,8 @@ const Footer = () => {
                         <div className="bottom-v2-left">
                             <p>© 2026 SkinTalk Cosmetics. All rights reserved. | Website by B2U APPS</p>
                             <nav className="bottom-nav-links">
-                                <a href="#">Cookies</a>
-                                <a href="#">Site Map</a>
+                                <Link href="/cookies">Cookies</Link>
+                                <Link href="/sitemap">Site Map</Link>
                             </nav>
                         </div>
                         <div className="bottom-v2-right">
