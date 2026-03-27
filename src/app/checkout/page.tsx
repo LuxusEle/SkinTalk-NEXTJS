@@ -46,11 +46,25 @@ export default function CheckoutPage() {
     const [invoiceNumber, setInvoiceNumber] = useState('');
     const [qrCode, setQrCode] = useState<string | null>(null);
     const [paymentStatus, setPaymentStatus] = useState<'pending' | 'paid' | 'idle'>('idle');
+    const [countdown, setCountdown] = useState(60);
     const qrRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (showQR && qrRef.current) {
             qrRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Start 60s countdown
+            setCountdown(60);
+            const timer = setInterval(() => {
+                setCountdown(prev => {
+                    if (prev <= 1) {
+                        clearInterval(timer);
+                        return 0;
+                    }
+                    return prev - 1;
+                });
+            }, 1000);
+            return () => clearInterval(timer);
         }
     }, [showQR]);
 
@@ -179,8 +193,34 @@ export default function CheckoutPage() {
             }
         } catch (err) {
             alert('Error placing order');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const checkPaymentManually = async () => {
+        if (!invoiceNumber) return;
+        setLoading(true);
+        const supabase = getSupabase();
+        const { data, error } = await supabase
+            .from('orders')
+            .select('status')
+            .eq('invoice_number', invoiceNumber)
+            .single();
+        
+        if (data?.status === 'paid') {
+            setPaymentStatus('paid');
+        } else {
+            alert('Payment not detected yet. Please wait a moment or try again.');
         }
         setLoading(false);
+    };
+
+    const handleRetryPayment = () => {
+        setOrderPlaced(false);
+        setShowQR(false);
+        setQrCode(null);
+        setPaymentStatus('idle');
     };
 
     if (initialLoading) {
@@ -352,11 +392,11 @@ export default function CheckoutPage() {
                             <div className="qr-card">
                                 {paymentStatus !== 'paid' ? (
                                     <>
-                                        <h3>Scan to Pay</h3>
-                                        <p className="qr-subtitle">Scan the QR code with your bank app to complete payment</p>
-                                        <div className="qr-code">
+                                        <h3>Scan & Pay Securely</h3>
+                                        <p className="qr-subtitle">Use your banking app to scan the QR and complete your payment instantly.</p>
+                                        <div className="qr-code" style={{ padding: '1rem', background: '#fff', borderRadius: '12px', border: '1px solid #eee' }}>
                                             {qrCode ? (
-                                                <img src={qrCode} alt="Payment QR Code" style={{ width: '100%', height: 'auto', maxWidth: '300px' }} />
+                                                <img src={qrCode || ''} alt="Payment QR Code" style={{ width: '100%', height: 'auto', maxWidth: '300px' }} />
                                             ) : (
                                                 <div className="qr-placeholder" style={{ width: '200px', height: '200px', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
                                                     <p>Generating QR...</p>
@@ -364,13 +404,35 @@ export default function CheckoutPage() {
                                             )}
                                         </div>
 
-                                        <p className="qr-note">Show this QR code to complete your payment</p>
+                                        <p className="qr-note">Scan this QR code with any LankaQR supported app</p>
+                                        
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginTop: '1.5rem' }}>
+                                            <button 
+                                                className="hero-cta" 
+                                                onClick={checkPaymentManually}
+                                                disabled={loading || countdown > 0}
+                                                style={{ 
+                                                    width: '100%', 
+                                                    background: countdown > 0 ? '#ccc' : '#25D366',
+                                                    cursor: countdown > 0 ? 'not-allowed' : 'pointer'
+                                                }}
+                                            >
+                                                {loading ? 'Verifying...' : countdown > 0 ? `I Have Paid (${countdown}s)` : 'I Have Paid'}
+                                            </button>
+                                            
+                                            <button 
+                                                onClick={handleRetryPayment}
+                                                style={{ background: 'none', border: 'none', color: '#666', textDecoration: 'underline', cursor: 'pointer', fontSize: '0.9rem' }}
+                                            >
+                                                Retry / Change Details
+                                            </button>
+                                        </div>
                                         
                                         {paymentStatus === 'pending' && (
                                             <div className="order-pending" style={{ marginTop: '1.5rem', textAlign: 'center', padding: '1rem', background: '#fff9e6', borderRadius: '8px', border: '1px solid #ffe699' }}>
                                                 <div className="spinner-small" style={{ margin: '0 auto 0.5rem' }}></div>
-                                                <p style={{ color: '#856404', fontWeight: 600 }}>Waiting for payment...</p>
-                                                <p style={{ fontSize: '0.85rem', color: '#856404' }}>Keep this screen open while paying</p>
+                                                <p style={{ color: '#856404', fontWeight: 600 }}>Auto-detecting payment...</p>
+                                                <p style={{ fontSize: '0.85rem', color: '#856404' }}>Verified instantly once paid</p>
                                             </div>
                                         )}
                                     </>
@@ -385,9 +447,22 @@ export default function CheckoutPage() {
                                         <h2 style={{ color: '#237804', fontWeight: 800, fontSize: '1.8rem', marginBottom: '1rem' }}>Order Placed!</h2>
                                         <p style={{ color: '#52c41a', fontSize: '1.1rem', fontWeight: 500 }}>Payment of LKR {grandTotal.toFixed(2)} Received 🎉</p>
                                         <p style={{ color: '#777', marginTop: '1.5rem' }}>Thank you for shopping with SkinTalk. Your order is being processed.</p>
-                                        <div style={{ marginTop: '2rem' }}>
-                                            <div className="spinner-small" style={{ margin: '0 auto 0.5rem', borderTopColor: '#52c41a' }}></div>
-                                            <p style={{ fontSize: '0.85rem', color: '#999' }}>Redirecting you back to Home...</p>
+                                        
+                                        <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                            <a 
+                                                href={`https://wa.me/94771234567?text=${encodeURIComponent(`Hi SkinTalk, I just placed an order #${invoiceNumber} for LKR ${grandTotal.toFixed(2)}. Please confirm!`)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="hero-cta"
+                                                style={{ background: '#25D366', textDecoration: 'none', display: 'inline-block' }}
+                                            >
+                                                Confirm on WhatsApp
+                                            </a>
+                                            
+                                            <div style={{ marginTop: '1rem' }}>
+                                                <div className="spinner-small" style={{ margin: '0 auto 0.5rem', borderTopColor: '#52c41a' }}></div>
+                                                <p style={{ fontSize: '0.85rem', color: '#999' }}>Redirecting you back to Home...</p>
+                                            </div>
                                         </div>
                                     </motion.div>
                                 )}
