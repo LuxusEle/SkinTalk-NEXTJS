@@ -415,7 +415,7 @@ export default function Home() {
                 </div>
             </section>
 
-            <section className="about" id="about" style={{ padding: '20px 0 100px 0', background: '#fffcfd', textAlign: 'center' }}>
+            <section className="about" id="about" style={{ padding: '0px 0 60px 0', background: '#fffcfd', textAlign: 'center' }}>
                 <div className="container" style={{ maxWidth: 800 }}>
                     <FadeIn><h2 className="section-title">The SkinTalk Promise</h2></FadeIn>
                     <FadeIn delay={0.1}><p style={{ fontSize: '1.1rem', color: '#777', marginBottom: '2rem' }}>Derived from nature, perfected by science. SkinTalk is committed to providing clean, effective skincare that respects your skin and the planet. No fillers, no toxins—just pure results.</p></FadeIn>

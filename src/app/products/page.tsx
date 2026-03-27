@@ -233,20 +233,20 @@ function ProductsPageContent() {
                 </nav>
             </div>
 
-            <section className="products" style={{ minHeight: '80vh', padding: '60px 0' }}>
+            <section className="products" style={{ minHeight: '80vh', padding: '20px 0' }}>
                 <div className="container">
-                    <FadeIn><h1 className="section-title" style={{ marginBottom: '4rem' }}>Our Collection</h1></FadeIn>
+                    <FadeIn><h1 className="section-title" style={{ marginBottom: '2rem' }}>Our Collection</h1></FadeIn>
                     
                     {Object.keys(groupedProducts).length === 0 ? (
                         <p style={{ textAlign: 'center', color: '#999', marginTop: '4rem' }}>Loading our products...</p>
                     ) : (
                         Object.keys(groupedProducts).map((category, catIndex) => (
-                            <div key={category} id={`category-${category.toLowerCase()}`} style={{ marginBottom: '6rem' }}>
+                            <div key={category} id={`category-${category.toLowerCase()}`} style={{ marginBottom: '3rem' }}>
                                 <FadeIn delay={catIndex * 0.1}>
                                     <h2 style={{ 
                                         fontSize: '1.8rem', 
                                         fontFamily: 'var(--font-serif)', 
-                                        marginBottom: '2.5rem', 
+                                        marginBottom: '1.5rem', 
                                         paddingBottom: '1rem', 
                                         borderBottom: '1px solid #f1f1f1' 
                                     }}>

@@ -289,7 +289,7 @@ export default function ProductDetailClient({
                 categories={categories}
             />
 
-            <section style={{ padding: '60px 0' }}>
+            <section style={{ padding: '20px 0' }}>
                 <div className="container">
                     <div style={{ marginBottom: '2rem' }}>
                         <a 

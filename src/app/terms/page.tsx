@@ -68,7 +68,7 @@ export default function TermsPage() {
                 categories={categories}
             />
 
-            <main style={{ paddingTop: '140px', paddingBottom: '100px' }}>
+            <main style={{ paddingTop: '20px', paddingBottom: '60px' }}>
                 <div className="container terms-grid">
                     {/* Sidebar */}
                     <aside className="terms-sidebar">

@@ -52,7 +52,7 @@ export default function AboutPage() {
                 categories={categories}
             />
 
-            <main style={{ paddingTop: '140px', paddingBottom: '100px' }}>
+            <main style={{ paddingTop: '20px', paddingBottom: '60px' }}>
                 <div className="container" style={{ maxWidth: '900px' }}>
                     
                     {/* Hero Section */}
