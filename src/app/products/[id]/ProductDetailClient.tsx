@@ -90,7 +90,7 @@ export default function ProductDetailClient({
     const [phoneNumber, setPhoneNumber] = useState('');
     const [authLoading, setAuthLoading] = useState(false);
     const [authError, setAuthError] = useState('');
-    const [activeSection, setActiveSection] = useState<string | null>('benefits');
+    const [activeSection, setActiveSection] = useState<string | null>(null);
     const accordionRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +109,7 @@ export default function ProductDetailClient({
 
 
     useEffect(() => {
+        window.scrollTo(0, 0);
         const supabase = getSupabase();
         supabase.auth.getUser().then(({ data: { user } }) => {
             setUser(user);
@@ -165,7 +166,7 @@ export default function ProductDetailClient({
 
     const loadCategories = async () => {
         const supabase = getSupabase();
-        const { data } = await supabase.from('product_categories').select('*').order('name');
+        const { data } = await supabase.from('categories').select('*').order('name');
         if (data) setCategories(data);
     };
 
@@ -349,9 +350,9 @@ export default function ProductDetailClient({
                 categories={categories}
             />
 
-            <section style={{ padding: '20px 0', marginTop: '1rem' }}>
+            <section style={{ padding: '10px 0', marginTop: '0.5rem' }}>
                 <div className="container">
-                    <div style={{ marginBottom: '2rem' }}>
+                    <div style={{ marginBottom: '1rem' }}>
                         <a 
                             onClick={() => router.push('/products')} 
                             style={{ 
@@ -376,7 +377,7 @@ export default function ProductDetailClient({
                                 <motion.img 
                                     src={product.image} 
                                     alt={product.image_alt || product.name} 
-                                    style={{ width: '100%', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }}
+                                    style={{ width: '100%', maxHeight: '550px', objectFit: 'contain', borderRadius: '12px', boxShadow: '0 20px 40px rgba(0,0,0,0.05)' }}
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 0.5 }}
@@ -387,8 +388,8 @@ export default function ProductDetailClient({
                         {/* Right: Product Info */}
                         <FadeIn delay={0.2}>
                             <div className="product-details">
-                                <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', marginBottom: '1rem', color: '#1a1a1a' }}>{product.name}</h1>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2.5rem', marginBottom: '0.5rem', color: '#1a1a1a' }}>{product.name}</h1>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                                     <h2 style={{ fontSize: '1.8rem', fontWeight: '500', color: '#333' }}>LKR {product.price.toFixed(2)}</h2>
                                     <div style={{ color: '#FFD700', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         <div style={{ display: 'flex', gap: '2px' }}>
@@ -411,30 +412,30 @@ export default function ProductDetailClient({
                                 )}
 
                                 {product.description && (
-                                    <div style={{ fontSize: '1.05rem', color: '#555', marginBottom: '2rem', lineHeight: '1.7' }}>
+                                    <div style={{ fontSize: '1.05rem', color: '#555', marginBottom: '1.5rem', lineHeight: '1.7' }}>
                                         {product.description}
                                     </div>
                                 )}
 
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2.5rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
                                     {(!product.quantity || product.quantity <= 0) ? (
                                         <p style={{ color: '#d9534f', fontWeight: 'bold' }}>Out of Stock</p>
                                     ) : (
                                         <>
                                             <motion.button 
                                                 className="hero-cta" 
-                                                style={{ width: '100%', background: '#000', color: '#fff', border: 'none' }}
+                                                style={{ width: '100%', background: 'var(--brand-green)', color: '#fff', border: 'none' }}
                                                 onClick={() => handleBuyNow(product)}
-                                                whileHover={{ scale: 1.02 }}
+                                                whileHover={{ scale: 1.02, background: 'var(--accent)' }}
                                                 whileTap={{ scale: 0.98 }}
                                             >
                                                 🟢 Buy Now
                                             </motion.button>
                                             <motion.button 
                                                 className="hero-cta" 
-                                                style={{ width: '100%', background: 'transparent', color: '#000', border: '1px solid #000' }}
+                                                style={{ width: '100%', background: 'transparent', color: 'var(--brand-green)', border: '1px solid var(--brand-green)' }}
                                                 onClick={() => addToCart(product)}
-                                                whileHover={{ scale: 1.02 }}
+                                                whileHover={{ scale: 1.02, background: 'rgba(0, 66, 54, 0.05)' }}
                                                 whileTap={{ scale: 0.98 }}
                                             >
                                                 Add to Cart
@@ -521,7 +522,7 @@ export default function ProductDetailClient({
                                         />
                                         <button 
                                             className="hero-cta" 
-                                            style={{ width: '100%', background: '#000', color: '#fff', opacity: submittingReview ? 0.7 : 1 }}
+                                            style={{ width: '100%', background: 'var(--brand-green)', color: '#fff', opacity: submittingReview ? 0.7 : 1 }}
                                             onClick={submitReview}
                                             disabled={submittingReview}
                                         >
@@ -562,7 +563,7 @@ export default function ProductDetailClient({
 
                     {/* Related Products */}
                     {relatedProducts.length > 0 && (
-                        <div style={{ marginTop: '8rem' }}>
+                        <div style={{ marginTop: '4rem' }}>
                             <FadeIn><h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', marginBottom: '4rem', textAlign: 'center' }}>You Might Also Love</h3></FadeIn>
                             <div className="products-grid">
                                 {relatedProducts.map((p, idx) => (
