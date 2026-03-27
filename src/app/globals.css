@@ -552,7 +552,7 @@ h1, h2, h3, h4 {
     position: relative;
     height: 350px;
     background: #fdfdfd;
-    margin-bottom: 1.8rem;
+    margin-bottom: 0.8rem;
     overflow: hidden;
     border: 1px solid #f9f9f9;
 }
@@ -565,12 +565,8 @@ h1, h2, h3, h4 {
 }
 
 .quick-add {
-    position: absolute;
-    bottom: 20px;
-    left: 7.5%;
-    right: 7.5%;
-    width: auto;
-    padding: 14px;
+    width: 100%;
+    padding: 12px;
     background: var(--brand-green);
     color: white;
     border: none;
@@ -581,7 +577,8 @@ h1, h2, h3, h4 {
     cursor: pointer;
     transition: var(--transition);
     opacity: 0;
-    white-space: nowrap;
+    max-height: 0;
+    overflow: hidden;
 }
 
 .quick-add:hover {
@@ -589,13 +586,18 @@ h1, h2, h3, h4 {
 }
 
 .product-card:hover .quick-add {
-    transform: translateY(0);
     opacity: 1;
+    max-height: 100px;
+    margin-top: 0.8rem;
+}
+
+.product-info {
+    transition: var(--transition);
 }
 
 .product-info h3 {
     font-size: 1.1rem;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.4rem;
     font-family: var(--font-sans);
     font-weight: 500;
 }

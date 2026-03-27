@@ -109,6 +109,7 @@ export default function ProductDetailClient({
 
 
     useEffect(() => {
+        sessionStorage.setItem('fromProducts', 'true');
         window.scrollTo(0, 0);
         const supabase = getSupabase();
         supabase.auth.getUser().then(({ data: { user } }) => {

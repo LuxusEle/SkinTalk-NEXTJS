@@ -97,6 +97,22 @@ export default function Home() {
         return () => subscription.unsubscribe();
     }, []);
 
+    useEffect(() => {
+        const fromProducts = sessionStorage.getItem('fromProducts');
+        if (fromProducts) {
+            window.scrollTo(0, 0); // Reset to top immediately to prevent jump
+            sessionStorage.removeItem('fromProducts');
+            const element = document.getElementById('collections');
+            if (element) {
+                setTimeout(() => {
+                    const yOffset = -120; // Ensure title is visible below header
+                    const y = element.getBoundingClientRect().top + window.pageYOffset + yOffset;
+                    window.scrollTo({ top: y, behavior: 'smooth' });
+                }, 150); // Shorter delay for cleaner transition
+            }
+        }
+    }, []);
+
     const handleAuth = async () => {
         setAuthLoading(true);
         setAuthError('');
@@ -394,15 +410,18 @@ export default function Home() {
                                             onClick={() => router.push(`/products/${product.slug || product.id}`)}
                                             style={{ cursor: 'pointer' }}
                                         />
-                                        {(!product.quantity || product.quantity <= 0) ? (
+                                        {(!product.quantity || product.quantity <= 0) && (
                                             <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', fontSize: '0.85rem' }}>Out of Stock</div>
-                                        ) : (
-                                            <motion.button className="quick-add" onClick={() => addToCart(product)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Add to Cart</motion.button>
                                         )}
                                     </div>
-                                    <div className="product-info" onClick={() => router.push(`/products/${product.slug || product.id}`)} style={{ cursor: 'pointer' }}>
-                                        <h3>{product.name}</h3>
-                                        <p className="product-price">LKR {product.price.toFixed(2)}</p>
+                                    <div className="product-info" style={{ cursor: 'pointer' }}>
+                                        <div onClick={() => router.push(`/products/${product.slug || product.id}`)}>
+                                            <h3>{product.name}</h3>
+                                            <p className="product-price">LKR {product.price.toFixed(2)}</p>
+                                        </div>
+                                        {(product.quantity && product.quantity > 0) && (
+                                            <motion.button className="quick-add" onClick={() => addToCart(product)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Add to Cart</motion.button>
+                                        )}
                                     </div>
                                 </motion.div>
                             </FadeIn>

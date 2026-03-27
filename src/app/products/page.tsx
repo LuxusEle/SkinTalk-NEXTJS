@@ -82,11 +82,14 @@ function ProductsPageContent() {
                     window.scrollTo({ top: y, behavior: 'smooth' });
                 }, 500);
             }
+        } else if (!categoryParam) {
+            window.scrollTo(0, 0);
         }
     }, [categoryParam, products]);
 
 
     useEffect(() => {
+        sessionStorage.setItem('fromProducts', 'true');
         const supabase = getSupabase();
         supabase.auth.getUser().then(({ data: { user } }) => {
             setUser(user);
@@ -266,15 +269,18 @@ function ProductsPageContent() {
                                                         onClick={() => router.push(`/products/${product.slug || product.id}`)}
                                                         style={{ cursor: 'pointer' }}
                                                     />
-                                                    {(!product.quantity || product.quantity <= 0) ? (
+                                                    {(!product.quantity || product.quantity <= 0) && (
                                                         <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '0.5rem 1rem', borderRadius: '4px', fontSize: '0.85rem' }}>Out of Stock</div>
-                                                    ) : (
-                                                        <motion.button className="quick-add" onClick={() => addToCart(product)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Add to Cart</motion.button>
                                                     )}
                                                 </div>
-                                                <div className="product-info" onClick={() => router.push(`/products/${product.slug || product.id}`)} style={{ cursor: 'pointer' }}>
-                                                    <h3>{product.name}</h3>
-                                                    <p className="product-price">LKR {product.price.toFixed(2)}</p>
+                                                <div className="product-info" style={{ cursor: 'pointer' }}>
+                                                    <div onClick={() => router.push(`/products/${product.slug || product.id}`)}>
+                                                        <h3>{product.name}</h3>
+                                                        <p className="product-price">LKR {product.price.toFixed(2)}</p>
+                                                    </div>
+                                                    {(product.quantity && product.quantity > 0) && (
+                                                        <motion.button className="quick-add" onClick={() => addToCart(product)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>Add to Cart</motion.button>
+                                                    )}
                                                 </div>
                                             </motion.div>
                                         </FadeIn>
