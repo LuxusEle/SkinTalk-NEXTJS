@@ -6,7 +6,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faShoppingBag, faTimes, faBars, faMagic, faUser, faSignOutAlt, faStar, faCreditCard, faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { motion, useInView } from 'framer-motion';
 import { getSupabase, isAdminEmail } from '@/lib/supabase';
-import Header from '@/components/Header';
+import dynamic from 'next/dynamic';
+const Header = dynamic(() => import('@/components/Header'), { ssr: false });
 
 interface Category {
     id: string;

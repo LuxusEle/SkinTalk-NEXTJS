@@ -6,7 +6,8 @@ import { faSearch, faShoppingBag, faTimes, faBars, faMagic, faUser, faSignOutAlt
 import { motion, useInView, useScroll, useTransform } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { getSupabase, isAdminEmail, getAdminClient } from '@/lib/supabase';
-import Header from '@/components/Header';
+import dynamic from 'next/dynamic';
+const Header = dynamic(() => import('@/components/Header'), { ssr: false });
 
 interface Product {
     id: string;

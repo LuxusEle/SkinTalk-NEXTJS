@@ -26,10 +26,7 @@ export default function Header({ user, cartCount, onLogout, onLoginClick, onCart
     const [scrolled, setScrolled] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const [mounted, setMounted] = useState(false);
-
     useEffect(() => {
-        setMounted(true);
         const handleScroll = () => setScrolled(window.scrollY > 100);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
@@ -40,10 +37,6 @@ export default function Header({ user, cartCount, onLogout, onLoginClick, onCart
             router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
         }
     };
-
-    if (!mounted) {
-        return <header className="header" style={{ height: '140px' }} />; // Consistent height placeholder
-    }
 
     return (
         <motion.header className={`header ${scrolled ? 'scrolled' : ''}`} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>

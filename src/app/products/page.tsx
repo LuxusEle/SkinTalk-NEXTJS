@@ -7,7 +7,8 @@ import { motion, useInView } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { getSupabase, isAdminEmail } from '@/lib/supabase';
-import Header from '@/components/Header';
+import dynamic from 'next/dynamic';
+const Header = dynamic(() => import('@/components/Header'), { ssr: false });
 
 interface Category {
     id: string;
