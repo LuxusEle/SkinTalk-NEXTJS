@@ -265,11 +265,16 @@ h1, h2, h3, h4 {
     object-fit: contain;
 }
 
+.header-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 2rem; /* Increased gap for desktop */
+}
+
 .header-actions {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 1.5rem;
 }
 
 .header-mobile-left {
