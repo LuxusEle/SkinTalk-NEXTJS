@@ -1,15 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faBars, faUser, faSignOutAlt, faChevronLeft, faChevronRight, faShoppingCart } from '@fortawesome/free-solid-svg-icons';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Category {
     id: string;
     name: string;
+}
+
+interface Announcement {
+    id: string;
+    phrase: string;
 }
 
 interface HeaderProps {
@@ -27,26 +32,100 @@ export default function Header({ user, cartCount, onLogout, onLoginClick, onCart
     const [scrolled, setScrolled] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [mounted, setMounted] = useState(false);
+    
+    // Announcements State
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [isMarquee, setIsMarquee] = useState(false);
+    const phraseRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         setMounted(true);
         const handleScroll = () => setScrolled(window.scrollY > 100);
         window.addEventListener('scroll', handleScroll);
+        
+        // Fetch Announcements
+        fetch('/api/announcements')
+            .then(res => res.json())
+            .then(data => {
+                if (data.announcements && data.announcements.length > 0) {
+                    setAnnouncements(data.announcements);
+                }
+            })
+            .catch(err => console.error('Failed to fetch announcements:', err));
+
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Auto-slide announcements
+    useEffect(() => {
+        if (announcements.length <= 1) return;
+        
+        const interval = setInterval(() => {
+            setCurrentIndex(prev => (prev + 1) % announcements.length);
+        }, 5000); // 5 seconds per phrase
+
+        return () => clearInterval(interval);
+    }, [announcements]);
+
+    // Check for marquee need
+    useEffect(() => {
+        if (phraseRef.current) {
+            const isLong = phraseRef.current.scrollWidth > phraseRef.current.clientWidth;
+            setIsMarquee(isLong);
+        }
+    }, [currentIndex, announcements, mounted]);
 
     const handleSearch = () => {
         if (searchQuery.trim()) {
             router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
         }
+    }
+
+    const prevAnnouncement = () => {
+        setCurrentIndex(prev => (prev - 1 + announcements.length) % announcements.length);
+    };
+
+    const nextAnnouncement = () => {
+        setCurrentIndex(prev => (prev + 1) % announcements.length);
     };
 
     return (
         <motion.header className={`header ${scrolled ? 'scrolled' : ''}`} initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="announcement-bar">
-                <span className="arrow arrow-left"><FontAwesomeIcon icon={faChevronLeft} /></span>
-                <p>Free delivery on orders over LKR 5000</p>
-                <span className="arrow arrow-right"><FontAwesomeIcon icon={faChevronRight} /></span>
+                {announcements.length > 1 && (
+                    <span className="arrow arrow-left" onClick={prevAnnouncement}><FontAwesomeIcon icon={faChevronLeft} /></span>
+                )}
+                
+                <div className="announcement-content-wrapper" ref={phraseRef}>
+                    <AnimatePresence mode="wait">
+                        {announcements.length > 0 ? (
+                            <motion.div 
+                                key={announcements[currentIndex].id}
+                                className={`announcement-phrase ${isMarquee ? 'marquee-active' : ''}`}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                {announcements[currentIndex].phrase}
+                            </motion.div>
+                        ) : (
+                            <motion.div 
+                                key="default"
+                                className="announcement-phrase"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                Free delivery on orders over LKR 5000
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
+                {announcements.length > 1 && (
+                    <span className="arrow arrow-right" onClick={nextAnnouncement}><FontAwesomeIcon icon={faChevronRight} /></span>
+                )}
             </div>
             
             <div className="main-header">

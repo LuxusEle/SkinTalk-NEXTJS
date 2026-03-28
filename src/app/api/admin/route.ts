@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
         const { action, data, userEmail } = body;
 
         const isAdmin = userEmail && userEmail.toLowerCase() === adminEmail;
-        const adminActions = ['add_product', 'update_product', 'delete_product', 'update_order_status', 'add_category', 'select_merchant'];
+        const adminActions = ['add_product', 'update_product', 'delete_product', 'update_order_status', 'add_category', 'select_merchant', 'add_announcement', 'update_announcement', 'delete_announcement', 'reorder_announcements'];
 
         if (adminActions.includes(action) && !isAdmin) {
             return NextResponse.json({ error: 'Unauthorized - Admin access required' }, { status: 401 });
@@ -239,6 +239,49 @@ export async function POST(request: NextRequest) {
 
                 if (selectError) return NextResponse.json({ error: selectError.message }, { status: 500 });
 
+                return NextResponse.json({ success: true });
+            }
+
+            case 'get_announcements': {
+                const { data: announcements, error } = await adminClient.from('announcements').select('*').order('display_order', { ascending: true });
+                if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+                return NextResponse.json({ success: true, data: announcements });
+            }
+            
+            case 'add_announcement': {
+                const { phrase, is_active, display_order } = data;
+                const { data: announcement, error } = await adminClient.from('announcements').insert({
+                    phrase,
+                    is_active,
+                    display_order: display_order || 0
+                }).select().single();
+                if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+                return NextResponse.json({ success: true, data: announcement });
+            }
+            
+            case 'update_announcement': {
+                const { id, phrase, is_active, display_order } = data;
+                const { data: announcement, error } = await adminClient.from('announcements').update({
+                    phrase,
+                    is_active,
+                    display_order
+                }).eq('id', id).select().single();
+                if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+                return NextResponse.json({ success: true, data: announcement });
+            }
+            
+            case 'delete_announcement': {
+                const { id } = data;
+                const { error } = await adminClient.from('announcements').delete().eq('id', id);
+                if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+                return NextResponse.json({ success: true });
+            }
+            
+            case 'reorder_announcements': {
+                const { orders } = data; // Array of {id, display_order}
+                for (const item of orders) {
+                    await adminClient.from('announcements').update({ display_order: item.display_order }).eq('id', item.id);
+                }
                 return NextResponse.json({ success: true });
             }
 

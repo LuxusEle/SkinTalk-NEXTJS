@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUsers, faShoppingBag, faDollarSign, faBox, faChartLine, faSignOutAlt, faPlus, faTrash, faImage, faCreditCard, faBars, faTimes, faMinus } from '@fortawesome/free-solid-svg-icons';
+import { faUsers, faShoppingBag, faDollarSign, faBox, faChartLine, faSignOutAlt, faPlus, faTrash, faImage, faCreditCard, faBars, faTimes, faMinus, faMagic } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import { getSupabase, isAdminEmail, getAdminClient } from '@/lib/supabase';
 import { readQRFromFile } from '@/lib/qr';
@@ -101,15 +101,24 @@ interface UserProfile {
     total_spent?: number;
 }
 
+interface Announcement {
+    id: string;
+    phrase: string;
+    is_active: boolean;
+    display_order: number;
+    created_at: string;
+}
+
 export default function AdminPage() {
     const router = useRouter();
     const [user, setUser] = useState<UserProfile | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'users' | 'payment'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'products' | 'orders' | 'users' | 'payment' | 'announcements'>('dashboard');
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
     const [users, setUsers] = useState<UserProfile[]>([]);
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, totalUsers: 0, totalProducts: 0 });
     
     const [categories, setCategories] = useState<Category[]>([]);
@@ -143,6 +152,8 @@ export default function AdminPage() {
     const [qrResult, setQrResult] = useState<any>(null);
     const [savedMerchants, setSavedMerchants] = useState<any[]>([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [newPhrase, setNewPhrase] = useState('');
+    const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
 
     useEffect(() => {
         checkAuth();
@@ -185,10 +196,11 @@ export default function AdminPage() {
     const loadData = async () => {
         const supabase = getSupabase();
 
-        const [productsRes, usersRes, categoriesRes] = await Promise.all([
+        const [productsRes, usersRes, categoriesRes, announcementsRes] = await Promise.all([
             supabase.from('products').select('*').order('created_at', { ascending: false }),
             supabase.from('user_profiles').select('*').order('created_at', { ascending: false }),
-            supabase.from('categories').select('*').order('name', { ascending: true })
+            supabase.from('categories').select('*').order('name', { ascending: true }),
+            supabase.from('announcements').select('*').order('display_order', { ascending: true })
         ]);
 
         let ordersRes: any = { data: [] };
@@ -227,6 +239,7 @@ export default function AdminPage() {
             setOrders(ordersWithDetails);
         }
         if (categoriesRes.data) setCategories(categoriesRes.data);
+        if (announcementsRes.data) setAnnouncements(announcementsRes.data);
         
         if (usersRes.data && ordersRes.data) {
             const usersWithSpent = usersRes.data.map((u: any) => {
@@ -579,6 +592,59 @@ export default function AdminPage() {
         if (!json.error) loadData();
     };
 
+    const handleSaveAnnouncement = async () => {
+        if (!newPhrase.trim()) return;
+        if (!user) return;
+
+        const action = editingAnnouncement ? 'update_announcement' : 'add_announcement';
+        const data = {
+            id: editingAnnouncement?.id,
+            phrase: newPhrase,
+            is_active: true,
+            display_order: editingAnnouncement?.display_order || announcements.length
+        };
+
+        const res = await fetch('/api/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action, data, userEmail: user.email })
+        });
+        const json = await res.json();
+        if (!json.error) {
+            setNewPhrase('');
+            setEditingAnnouncement(null);
+            loadData();
+        } else {
+            alert(json.error);
+        }
+    };
+
+    const handleDeleteAnnouncement = async (id: string) => {
+        if (!confirm('Are you sure?') || !user) return;
+        const res = await fetch('/api/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'delete_announcement', data: { id }, userEmail: user.email })
+        });
+        const json = await res.json();
+        if (!json.error) loadData();
+    };
+
+    const toggleAnnouncementActive = async (ann: Announcement) => {
+        if (!user) return;
+        const res = await fetch('/api/admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                action: 'update_announcement', 
+                data: { ...ann, is_active: !ann.is_active }, 
+                userEmail: user.email 
+            })
+        });
+        const json = await res.json();
+        if (!json.error) loadData();
+    };
+
     if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>;
     if (!isAdmin) return null;
 
@@ -608,6 +674,9 @@ export default function AdminPage() {
                     </button>
                     <button className={`admin-nav-item ${activeTab === 'payment' ? 'active' : ''}`} onClick={() => { setActiveTab('payment'); setIsSidebarOpen(false); }}>
                         <FontAwesomeIcon icon={faCreditCard} /> Payment Setup
+                    </button>
+                    <button className={`admin-nav-item ${activeTab === 'announcements' ? 'active' : ''}`} onClick={() => { setActiveTab('announcements'); setIsSidebarOpen(false); }}>
+                        <FontAwesomeIcon icon={faMagic} /> Announcements
                     </button>
                     <button className={`admin-nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setIsSidebarOpen(false); }} style={{ display: 'none' }}>
                         Dashboard
@@ -700,252 +769,74 @@ export default function AdminPage() {
                                 onClick={() => setIsAddProductExpanded(!isAddProductExpanded)}
                             >
                                 <h3 style={{ margin: 0 }}><FontAwesomeIcon icon={isAddProductExpanded ? faMinus : faPlus} /> {editingProduct ? 'Edit Product' : 'Add New Product'}</h3>
-                                <button className="admin-btn secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}>
-                                    {isAddProductExpanded ? 'Hide Form' : 'Show Form'}
-                                </button>
                             </div>
 
                             {isAddProductExpanded && (
-                                <motion.div 
-                                    initial={{ height: 0, opacity: 0 }} 
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    transition={{ duration: 0.3 }}
-                                    style={{ overflow: 'hidden' }}
-                                >
-                                    <div className="admin-form-grid" style={{ gridTemplateColumns: 'repeat(6, 1fr)' }}>
-                                <input type="text" placeholder="Product Name" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} />
-                                <input type="text" placeholder="Item Code" value={newProductItemCode} onChange={(e) => setNewProductItemCode(e.target.value)} />
-                                <input type="number" placeholder="Price" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
-                                <input type="number" placeholder="Quantity" value={newProductQuantity} onChange={(e) => setNewProductQuantity(e.target.value)} />
-                                <div style={{ gridColumn: 'span 1', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                    {categories.length === 0 ? (
-                                        <input type="text" placeholder="Category" value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)} style={{ flex: 1 }} />
-                                    ) : (
-                                        <div className="custom-select-wrapper" style={{ position: 'relative', flex: 1 }}>
-                                            <div 
-                                                className={`admin-form-custom-select-trigger ${isCategoryDropdownOpen ? 'open' : ''}`}
-                                                onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                                                style={{ color: newProductCategory ? 'inherit' : '#ccc' }}
-                                            >
-                                                {newProductCategory || 'Select'}
-                                            </div>
-                                            {isCategoryDropdownOpen && (
-                                                <div className="custom-select-dropdown">
-                                                    {categories.map(cat => (
-                                                        <div 
-                                                            key={cat.id}
-                                                            className="custom-select-option"
-                                                            onClick={() => {
-                                                                setNewProductCategory(cat.name);
-                                                                setIsCategoryDropdownOpen(false);
-                                                            }}
-                                                        >
-                                                            {cat.name}
-                                                        </div>
-                                                    ))}
-                                                    <div 
-                                                        className="custom-select-option add-new"
-                                                        onClick={() => {
-                                                            setTimeout(() => setShowAddCategory(true), 10);
-                                                            setIsCategoryDropdownOpen(false);
-                                                        }}
-                                                    >
-                                                        + Add new category
-                                                    </div>
-                                                </div>
-                                            )}
+                                <div style={{ marginTop: '1.5rem' }}>
+                                    <div className="admin-form-grid">
+                                        <div className="form-group">
+                                            <label>Product Name</label>
+                                            <input type="text" placeholder="Product Name" value={newProductName} onChange={(e) => setNewProductName(e.target.value)} />
                                         </div>
-                                    )}
-                                </div>
-                                <div className="file-input-wrapper">
-                                    <label>
-                                        <FontAwesomeIcon icon={faImage} /> 
-                                        {newProductImageName ? newProductImageName : 'Upload Image'}
-                                    </label>
-                                    <input type="file" accept="image/*" onChange={(e) => { setNewProductImage(e.target.files?.[0] || null); setNewProductImageName(e.target.files?.[0]?.name || ''); }} />
-                                </div>
-                                <textarea 
-                                    placeholder="Product Description" 
-                                    value={newProductDescription} 
-                                    onChange={(e) => setNewProductDescription(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
-                                />
-                                <textarea 
-                                    placeholder="Short Benefit (e.g. Clears acne)" 
-                                    value={newProductShortBenefit} 
-                                    onChange={(e) => setNewProductShortBenefit(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '60px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
-                                />
-                                <textarea 
-                                    placeholder="Key Benefits (List them...)" 
-                                    value={newProductBenefits} 
-                                    onChange={(e) => setNewProductBenefits(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
-                                />
-                                <textarea 
-                                    placeholder="How to Use (Step 1, Step 2...)" 
-                                    value={newProductHowToUse} 
-                                    onChange={(e) => setNewProductHowToUse(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
-                                />
-                                <textarea 
-                                    placeholder="Ingredients" 
-                                    value={newProductIngredients} 
-                                    onChange={(e) => setNewProductIngredients(e.target.value)}
-                                    style={{ gridColumn: 'span 6', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '100px', width: '100%', fontFamily: 'inherit', fontSize: '0.95rem' }}
-                                />
-                                
-                                <div style={{ gridColumn: 'span 6', marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1.5rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                        <h4 style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>SEO & WEB METADATA</h4>
-                                        <button 
-                                            type="button"
-                                            className="admin-btn secondary" 
-                                            onClick={generateSEOData} 
-                                            style={{ 
-                                                padding: '0.4rem 0.8rem', 
-                                                fontSize: '0.85rem', 
-                                                background: '#f8f9fa', 
-                                                border: '1px solid #ddd', 
-                                                color: '#555',
-                                                borderRadius: '6px'
-                                            }}
-                                        >
-                                            ✨ Auto-generate SEO
-                                        </button>
-                                    </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '1rem' }}>
-                                        <div style={{ gridColumn: 'span 3' }}>
-                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Search Engine Friendly URL (Slug)</label>
-                                            <input type="text" placeholder="e.g. herbal-face-wash" value={newProductSlug} onChange={(e) => setNewProductSlug(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                        <div className="form-group">
+                                            <label>Price (LKR)</label>
+                                            <input type="number" placeholder="Price" value={newProductPrice} onChange={(e) => setNewProductPrice(e.target.value)} />
                                         </div>
-                                        <div style={{ gridColumn: 'span 3' }}>
-                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Product SKU</label>
-                                            <input type="text" placeholder="SKU001" value={newProductSKU} onChange={(e) => setNewProductSKU(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
+                                        <div className="form-group">
+                                            <label>Quantity</label>
+                                            <input type="number" placeholder="Quantity" value={newProductQuantity} onChange={(e) => setNewProductQuantity(e.target.value)} />
                                         </div>
-                                        <div style={{ gridColumn: 'span 3' }}>
-                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Meta Title</label>
-                                            <input type="text" placeholder="Google search title" value={newProductMetaTitle} onChange={(e) => setNewProductMetaTitle(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
-                                        </div>
-                                        <div style={{ gridColumn: 'span 3' }}>
-                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Image Accessibility Text (Alt)</label>
-                                            <input type="text" placeholder="Description for screen readers" value={newProductImageAlt} onChange={(e) => setNewProductImageAlt(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }} />
-                                        </div>
-                                        <div style={{ gridColumn: 'span 6' }}>
-                                            <label style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.4rem', display: 'block' }}>Meta Description</label>
-                                            <textarea 
-                                                placeholder="Brief summary for search results" 
-                                                value={newProductMetaDescription} 
-                                                onChange={(e) => setNewProductMetaDescription(e.target.value)}
-                                                style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd', minHeight: '60px', fontFamily: 'inherit', fontSize: '0.95rem' }}
-                                            />
+                                        <div className="form-group">
+                                            <label>Category</label>
+                                            <select value={newProductCategory} onChange={(e) => setNewProductCategory(e.target.value)}>
+                                                <option value="">Select Category</option>
+                                                {categories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                            </select>
                                         </div>
                                     </div>
+                                    <div className="form-group" style={{ marginTop: '1rem' }}>
+                                        <label>Description</label>
+                                        <textarea placeholder="Description" value={newProductDescription} onChange={(e) => setNewProductDescription(e.target.value)} rows={3} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                                        <button className="admin-btn primary" onClick={handleSaveProduct}>{editingProduct ? 'Update Product' : 'Add Product'}</button>
+                                        {editingProduct && <button className="admin-btn secondary" onClick={() => { setEditingProduct(null); setIsAddProductExpanded(false); }}>Cancel</button>}
+                                    </div>
                                 </div>
-                            </div>
+                            )}
+                        </div>
 
-                                <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #eee' }}>
-                                    <button className="admin-btn primary" onClick={handleSaveProduct} disabled={uploading}>
-                                        {uploading ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
-                                    </button>
-                                    {editingProduct && (
-                                        <button className="admin-btn" onClick={resetForm} style={{ background: '#ddd' }}>
-                                            Cancel
-                                        </button>
-                                    )}
-                                </div>
-                            </motion.div>
-                        )}
-                    </div>
-
-                        <h2 style={{ marginTop: '2rem' }}>All Products</h2>
-                        <div className="admin-table-container">
+                        <div className="admin-table-container" style={{ marginTop: '2rem' }}>
                             <table className="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Image</th>
-                                        <th>Code</th>
+                                        <th>Img</th>
                                         <th>Name</th>
                                         <th>Category</th>
                                         <th>Price</th>
-                                        <th>Qty</th>
+                                        <th>Stock</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {products.map(product => (
-                                        <tr key={product.id} onClick={() => handleEditProduct(product)} style={{ cursor: 'pointer' }}>
-                                            <td><img src={product.image} alt={product.name} style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }} /></td>
-                                            <td style={{ fontWeight: 600 }}>{product.item_code || '-'}</td>
-                                            <td>{product.name}</td>
+                                        <tr key={product.id}>
+                                            <td>{product.image && <img src={product.image} alt={product.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '4px' }} />}</td>
+                                            <td style={{ fontWeight: 500 }}>{product.name}</td>
                                             <td>{product.category}</td>
                                             <td>LKR {product.price.toFixed(2)}</td>
-                                            <td>{product.quantity || 0}</td>
-                                            <td onClick={(e) => e.stopPropagation()}>
-                                                <button className="admin-btn danger" onClick={() => handleDeleteProduct(product.id)}>
-                                                    <FontAwesomeIcon icon={faTrash} />
-                                                </button>
+                                            <td>{product.quantity}</td>
+                                            <td>
+                                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                    <button className="admin-btn secondary" style={{ padding: '0.4rem' }} onClick={() => { setEditingProduct(product); setIsAddProductExpanded(true); }}>Edit</button>
+                                                    <button className="admin-btn secondary" style={{ padding: '0.4rem', color: '#d9534f' }} onClick={() => handleDeleteProduct(product.id)}><FontAwesomeIcon icon={faTrash} /></button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-
-                        {showAddCategory && (
-                            <div className="admin-modal-overlay">
-                                <div className="admin-modal">
-                                    <div className="admin-modal-header">
-                                        <h3>Add New Category</h3>
-                                        <button className="close-btn" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryImage(null); setNewCategoryImageName(''); }}>
-                                            <FontAwesomeIcon icon={faTimes} />
-                                        </button>
-                                    </div>
-                                    <div className="admin-modal-body">
-                                        <div className="admin-form-group">
-                                            <label>Category Name</label>
-                                            <input 
-                                                type="text" 
-                                                placeholder="Enter category name" 
-                                                value={newCategoryName} 
-                                                onChange={(e) => setNewCategoryName(e.target.value)}
-                                                autoFocus
-                                            />
-                                        </div>
-                                        <div className="admin-form-group">
-                                            <label>Category Image</label>
-                                            <div className="file-input-wrapper">
-                                                <label>
-                                                    <FontAwesomeIcon icon={faImage} /> 
-                                                    {newCategoryImageName ? newCategoryImageName : 'Upload Category Image'}
-                                                </label>
-                                                <input 
-                                                    type="file" 
-                                                    accept="image/*" 
-                                                    onChange={(e) => { 
-                                                        setNewCategoryImage(e.target.files?.[0] || null); 
-                                                        setNewCategoryImageName(e.target.files?.[0]?.name || ''); 
-                                                    }} 
-                                                />
-                                            </div>
-                                            {newCategoryImage && (
-                                                <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
-                                                    Selected: {newCategoryImageName}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="admin-modal-footer">
-                                        <button className="admin-btn" onClick={() => { setShowAddCategory(false); setNewCategoryName(''); setNewCategoryImage(null); setNewCategoryImageName(''); }} style={{ background: '#eee', color: '#333' }}>
-                                            Cancel
-                                        </button>
-                                        <button className="admin-btn primary" onClick={handleAddCategory} disabled={uploading}>
-                                            {uploading ? 'Adding...' : 'Add Category'}
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </motion.div>
                 )}
 
@@ -1021,186 +912,199 @@ export default function AdminPage() {
 
                 {activeTab === 'payment' && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                        <h1>My QRs</h1>
+                        <h1>Payment Setup</h1>
                         <div className="admin-card">
-                            <h3>Scan or Upload QR Code</h3>
-                            <p style={{ color: '#666', marginBottom: '1rem' }}>Upload a QR code image to verify payment details</p>
+                            <h3>LankaQR Integration</h3>
+                            <p style={{ color: '#666', marginBottom: '1.5rem' }}>Configure your merchant details for LankaQR payments.</p>
                             
-                            <div style={{ marginBottom: '1rem' }}>
-                                <label style={{ 
-                                    display: 'flex', 
-                                    flexDirection: 'column', 
-                                    alignItems: 'center', 
-                                    justifyContent: 'center',
-                                    padding: '2rem', 
-                                    border: '2px dashed #ddd', 
-                                    borderRadius: '12px', 
-                                    cursor: 'pointer',
-                                    background: '#fafafa',
-                                    transition: 'all 0.2s'
-                                }}>
-                                    <FontAwesomeIcon icon={faImage} style={{ fontSize: '2rem', color: '#ccc', marginBottom: '0.5rem' }} />
-                                    <span style={{ color: '#666', fontWeight: 500 }}>Click to upload QR image</span>
-                                    <span style={{ color: '#999', fontSize: '0.85rem', marginTop: '0.25rem' }}>PNG, JPG up to 10MB</span>
-                                    <input 
-                                        type="file" 
-                                        accept="image/*"
-                                        onChange={async (e) => {
-                                            const file = e.target.files?.[0];
-                                            if (!file) return;
-                                            
+                            <div className="admin-form-grid" style={{ gridTemplateColumns: 'repeat(1, 1fr)', gap: '1.5rem' }}>
+                                <div className="file-input-wrapper">
+                                    <label>
+                                        <FontAwesomeIcon icon={faImage} /> {qrLoading ? 'Parsing...' : 'Upload QR Image to Auto-Fill'}
+                                    </label>
+                                    <input type="file" accept="image/*" onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
                                             setQrLoading(true);
                                             setQrError('');
-                                            setQrResult(null);
-                                            
                                             try {
-                                                const qrString = await readQRFromFile(file);
-                                                
-                                                if (qrString) {
-                                                    await parseQR(qrString);
-                                                } else {
-                                                    setQrError('Could not read QR code from image');
-                                                }
+                                                const qrText = await readQRFromFile(file);
+                                                if (qrText) await parseQR(qrText);
+                                                else setQrError('No QR code found in image');
                                             } catch (err) {
-                                                setQrError('Error reading QR code');
+                                                setQrError('Failed to read QR image');
+                                            } finally {
+                                                setQrLoading(false);
                                             }
-                                            setQrLoading(false);
-                                        }}
-                                        style={{ display: 'none' }}
-                                    />
-                                </label>
-                            </div>
-                            
-                            {qrLoading && <p style={{ marginTop: '1rem', color: 'var(--accent)' }}>Verifying QR code...</p>}
-                            
-                            {qrError && <p style={{ marginTop: '1rem', color: 'red' }}>{qrError}</p>}
-                            
-                            {qrResult && (
-                                <div style={{ marginTop: '1.5rem', padding: '1rem', background: '#f5f5f5', borderRadius: '8px' }}>
-                                    <h4 style={{ marginBottom: '1rem' }}>Merchant Details</h4>
-                                    <div style={{ display: 'grid', gap: '0.5rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ color: '#666' }}>Merchant Name:</span>
-                                            <strong>{qrResult.merchant_name || 'N/A'}</strong>
+                                        }
+                                    }} />
+                                </div>
+                                {qrError && <p style={{ color: '#d9534f', fontSize: '0.85rem' }}>{qrError}</p>}
+                                
+                                {qrResult && (
+                                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8f8f8', borderRadius: '8px', border: '1px solid #eee' }}>
+                                        <h4 style={{ marginBottom: '1rem' }}>Merchant Details Found:</h4>
+                                        <div style={{ display: 'grid', gap: '0.5rem', fontSize: '0.9rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ color: '#666' }}>Name:</span>
+                                                <span style={{ fontWeight: 600 }}>{qrResult.merchant_name}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ color: '#666' }}>City:</span>
+                                                <span>{qrResult.merchant_city}</span>
+                                            </div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <span style={{ color: '#666' }}>Bank Code:</span>
+                                                <span>{qrResult.bank_code}</span>
+                                            </div>
                                         </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ color: '#666' }}>City:</span>
-                                            <span>{qrResult.merchant_city || 'N/A'}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                            <span style={{ color: '#666' }}>Bank:</span>
-                                            <span>{bankCodeItems[qrResult.bank_code] || qrResult.bank_code || 'N/A'}</span>
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
                                         <button 
+                                            className="admin-btn primary" 
+                                            style={{ marginTop: '1rem', width: '100%' }}
                                             onClick={async () => {
-                                                if (!qrResult) return;
-                                                try {
-                                                    const response = await fetch('/api/admin', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({
-                                                            action: 'save_merchant',
-                                                            data: qrResult,
-                                                            userEmail: user?.email
-                                                        })
-                                                    });
-                                                    const result = await response.json();
-                                                    if (result.success) {
-                                                        alert('Merchant data saved successfully!');
-                                                        setQrResult(null);
-                                                        loadSavedMerchant();
-                                                    } else {
-                                                        alert('Error saving merchant: ' + result.error);
-                                                    }
-                                                } catch (err) {
-                                                    alert('Error saving merchant data');
+                                                if (!user) return;
+                                                const res = await fetch('/api/admin', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({ action: 'save_merchant', data: qrResult, userEmail: user.email })
+                                                });
+                                                const json = await res.json();
+                                                if (json.success) {
+                                                    setQrResult(null);
+                                                    loadSavedMerchant();
+                                                } else {
+                                                    alert(json.error);
                                                 }
-                                            }}
-                                            style={{
-                                                padding: '0.75rem 1.5rem',
-                                                background: 'var(--accent)',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '8px',
-                                                cursor: 'pointer',
-                                                fontWeight: 500
                                             }}
                                         >
-                                            Save Merchant Data
+                                            Save Merchant
                                         </button>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
 
-                        {savedMerchants.length > 0 && (
-                            <div style={{ marginTop: '1.5rem' }}>
-                                <h3>Saved Merchants</h3>
-                                <div style={{ 
-                                    display: 'grid', 
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', 
-                                    gap: '1.25rem',
-                                    marginTop: '1rem'
-                                }}>
-                                    {savedMerchants.map((merchant) => (
-                                        <div 
-                                            key={merchant.id} 
-                                            className="admin-card" 
-                                            style={{ 
-                                                padding: '1.5rem', 
-                                                cursor: 'pointer',
-                                                border: merchant.selected ? '2px solid var(--accent)' : '2px solid transparent',
-                                                transition: 'all 0.2s ease',
-                                                boxShadow: merchant.selected ? '0 4px 12px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.05)'
-                                            }}
-                                            onClick={async () => {
-                                                try {
-                                                    const response = await fetch('/api/admin', {
-                                                        method: 'POST',
-                                                        headers: { 'Content-Type': 'application/json' },
-                                                        body: JSON.stringify({
-                                                            action: 'select_merchant',
-                                                            data: { id: merchant.id },
-                                                            userEmail: user?.email
-                                                        })
-                                                    });
-                                                    const result = await response.json();
-                                                    if (result.success) {
-                                                        loadSavedMerchant();
-                                                    } else {
-                                                        alert('Error selecting merchant: ' + result.error);
-                                                    }
-                                                } catch (err) {
-                                                    alert('Error selecting merchant');
-                                                }
-                                            }}
-                                        >
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                                <input 
-                                                    type="radio" 
-                                                    checked={merchant.selected || false} 
-                                                    onChange={() => {}}
-                                                    style={{ accentColor: 'var(--accent)', width: '20px', height: '20px' }}
-                                                />
-                                                <strong style={{ fontSize: '1.1rem', color: '#333' }}>
-                                                    {bankCodeItems[merchant.bank_code] || merchant.bank_code || 'N/A'}
-                                                </strong>
-                                            </div>
-                                            <div style={{ color: '#666', marginLeft: '2rem', fontSize: '0.95rem' }}>
-                                                <div style={{ fontWeight: 500, color: 'var(--accent)', marginBottom: '0.25rem' }}>
-                                                    {merchant.merchant_name || 'N/A'}
-                                                </div>
-                                                <div style={{ opacity: 0.8 }}>
-                                                    {merchant.merchant_city || 'N/A'}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                        <div className="admin-card" style={{ marginTop: '2rem' }}>
+                            <h3>Saved Merchants</h3>
+                            <div className="admin-table-container">
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Merchant Name</th>
+                                            <th>ID</th>
+                                            <th>City</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {savedMerchants.map(m => (
+                                            <tr key={m.id}>
+                                                <td style={{ fontWeight: 500 }}>{m.merchant_name}</td>
+                                                <td style={{ fontSize: '0.85rem' }}>{m.merchant_id}</td>
+                                                <td>{m.merchant_city}</td>
+                                                <td>
+                                                    <span className={`status-badge ${m.selected ? 'completed' : 'pending'}`}>
+                                                        {m.selected ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    {!m.selected && (
+                                                        <button 
+                                                            className="admin-btn secondary" 
+                                                            onClick={async () => {
+                                                                if (!user) return;
+                                                                const res = await fetch('/api/admin', {
+                                                                    method: 'POST',
+                                                                    headers: { 'Content-Type': 'application/json' },
+                                                                    body: JSON.stringify({ action: 'select_merchant', data: { id: m.id }, userEmail: user.email })
+                                                                });
+                                                                const json = await res.json();
+                                                                if (!json.error) loadSavedMerchant();
+                                                            }}
+                                                        >
+                                                            Select
+                                                        </button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
-                        )}
+                        </div>
+                    </motion.div>
+                )}
+
+                {activeTab === 'announcements' && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        <h1>Announcement Bar</h1>
+                        <div className="admin-card">
+                            <h3>{editingAnnouncement ? 'Edit Phrase' : 'Add New Phrase'}</h3>
+                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                                <input 
+                                    type="text" 
+                                    placeholder="Enter announcement text (e.g. Free shipping over LKR 5000)" 
+                                    value={newPhrase} 
+                                    onChange={(e) => setNewPhrase(e.target.value)}
+                                    style={{ flex: 1, padding: '0.8rem', borderRadius: '8px', border: '1px solid #ddd' }}
+                                />
+                                <button className="admin-btn primary" onClick={handleSaveAnnouncement}>
+                                    {editingAnnouncement ? 'Update' : 'Add Phrase'}
+                                </button>
+                                {editingAnnouncement && (
+                                    <button className="admin-btn secondary" onClick={() => { setEditingAnnouncement(null); setNewPhrase(''); }}>
+                                        Cancel
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="admin-card" style={{ marginTop: '2rem' }}>
+                            <h3>Manage Phrases</h3>
+                            <div className="admin-table-container">
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Phrase</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {announcements.map(ann => (
+                                            <tr key={ann.id}>
+                                                <td>{ann.phrase}</td>
+                                                <td>
+                                                    <button 
+                                                        onClick={() => toggleAnnouncementActive(ann)}
+                                                        className={`status-badge ${ann.is_active ? 'completed' : 'cancelled'}`}
+                                                        style={{ border: 'none', cursor: 'pointer' }}
+                                                    >
+                                                        {ann.is_active ? 'Active' : 'Inactive'}
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                                        <button className="admin-btn secondary" style={{ padding: '0.4rem' }} onClick={() => { setEditingAnnouncement(ann); setNewPhrase(ann.phrase); }}>
+                                                            Edit
+                                                        </button>
+                                                        <button className="admin-btn secondary" style={{ padding: '0.4rem', color: '#d9534f' }} onClick={() => handleDeleteAnnouncement(ann.id)}>
+                                                            <FontAwesomeIcon icon={faTrash} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {announcements.length === 0 && (
+                                            <tr>
+                                                <td colSpan={3} style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>No announcements found.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
             </main>
